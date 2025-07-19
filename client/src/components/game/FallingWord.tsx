@@ -1,12 +1,18 @@
 import { motion } from "framer-motion";
-import { Word } from "../../lib/stores/useWordRain";
+import { Word, useWordRain } from "../../lib/stores/useWordRain";
 
 interface FallingWordProps {
   word: Word;
 }
 
 export default function FallingWord({ word }: FallingWordProps) {
-  const { text, x, y, fontSize, fontFamily, cursorPosition, completed } = word;
+  const { text, x, y, fontSize, fontFamily, cursorPosition, completed, rotation, rotationDirection, rotationCenterX, rotationCenterY } = word;
+  
+  // Calculate rotation speed based on difficulty (wordsTyped)
+  // Get the current game state to determine difficulty
+  const { wordsTyped } = useWordRain.getState();
+  const difficulty = Math.floor(wordsTyped / 10);
+  const rotationSpeed = Math.max(12 - (difficulty * 1), 3); // Start at 12 seconds per rotation, decrease by 1 second every 10 words, minimum 3 seconds
 
   if (completed) return null;
 
@@ -18,10 +24,22 @@ export default function FallingWord({ word }: FallingWordProps) {
         top: `${y}px`,
         fontSize: `${fontSize}px`,
         fontFamily: fontFamily,
+        transformOrigin: `${rotationCenterX}px ${rotationCenterY}px`,
       }}
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
+      initial={{ opacity: 0, scale: 0.8, rotate: rotation }}
+      animate={{ 
+        opacity: 1, 
+        scale: 1, 
+        rotate: rotationDirection !== 0 ? [rotation, rotation + (360 * rotationDirection)] : rotation
+      }}
+      transition={{ 
+        duration: 0.3,
+        rotate: rotationDirection !== 0 ? {
+          duration: rotationSpeed,
+          repeat: Infinity,
+          ease: "linear"
+        } : { duration: 0.3 }
+      }}
     >
       <div className="relative whitespace-pre">
         {text.split("").map((letter, index) => (

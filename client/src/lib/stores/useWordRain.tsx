@@ -13,6 +13,10 @@ export interface Word {
   cursorPosition: number;
   completed: boolean;
   missed: boolean;
+  rotation: number;
+  rotationDirection: number;
+  rotationCenterX: number;
+  rotationCenterY: number;
 }
 
 export interface ExplodingLetter {
@@ -65,6 +69,20 @@ export const useWordRain = create<WordRainState>((set, get) => ({
     const baseSpeed = 1.5 + (difficulty * 0.3); // Start at 1.5, increase by 0.3 every 10 words
     const speed = baseSpeed + (Math.random() * 1.5); // Add some randomness
     
+    // Rotation chance and intensity increases with difficulty
+    const rotationChance = Math.min(0.25 + (difficulty * 0.05), 0.8); // Start at 25%, increase by 5% every 10 words, max 80%
+    const shouldRotate = Math.random() < rotationChance;
+    
+    // Rotation increases with difficulty - very subtle at start, more pronounced later
+    const baseRotation = Math.min(difficulty * 0.5, 8); // Much more subtle: max 8 degrees, increases by 0.5 every 10 words
+    const rotation = shouldRotate ? (Math.random() - 0.5) * baseRotation : 0; // Random rotation within the difficulty-based range
+    const rotationDirection = shouldRotate ? (Math.random() < 0.5 ? 1 : -1) : 0; // Random direction: 50% clockwise, 50% counterclockwise
+    
+    // Calculate random rotation center within the word bounds
+    const estimatedWordWidth = word.length * fontSize * 0.6; // Approximate word width
+    const rotationCenterX = shouldRotate ? Math.random() * estimatedWordWidth : 0; // Random point within word width
+    const rotationCenterY = shouldRotate ? Math.random() * fontSize : 0; // Random point within word height
+    
     const newWord: Word = {
       id: Math.random().toString(36).substr(2, 9),
       text: word,
@@ -76,6 +94,10 @@ export const useWordRain = create<WordRainState>((set, get) => ({
       cursorPosition: 0,
       completed: false,
       missed: false,
+      rotation: rotation,
+      rotationDirection: rotationDirection,
+      rotationCenterX: rotationCenterX,
+      rotationCenterY: rotationCenterY,
     };
 
     set((state) => ({
