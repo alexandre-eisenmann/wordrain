@@ -25,13 +25,13 @@ export default function ExplodingLetter({ letter }: ExplodingLetterProps) {
       }}
       animate={{ 
         opacity: 0, 
-        scale: 0.5,
+        scale: 0.3,
         rotate: rotation,
-        x: vx * 100,
-        y: vy * 100,
+        x: vx * 0.8, // Slower horizontal movement
+        y: vy * 0.8 + 150, // Slower vertical movement with gravity
       }}
       transition={{ 
-        duration: 2,
+        duration: 3, // Slower animation - 3 seconds instead of 2
         ease: "easeOut"
       }}
     >

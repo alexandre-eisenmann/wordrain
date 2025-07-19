@@ -117,8 +117,8 @@ export const useWordRain = create<WordRainState>((set, get) => ({
 
     // Update exploding letters
     const activeExplodingLetters = state.explodingLetters.filter((letter) => {
-      const age = Date.now() - parseInt(letter.id.split('-')[1]);
-      return age < 2000; // Remove after 2 seconds
+      const age = Date.now() - parseInt(letter.id.split('-')[2]); // Updated to match new ID format
+      return age < 3000; // Remove after 3 seconds to match animation duration
     });
 
     set({
@@ -153,11 +153,11 @@ export const useWordRain = create<WordRainState>((set, get) => ({
             char,
             x: word.x + (index * word.fontSize * 0.6),
             y: word.y,
-            vx: (Math.random() - 0.5) * 400,
-            vy: (Math.random() - 0.5) * 300 - 100,
+            vx: (Math.random() - 0.5) * 200, // Slower horizontal velocity
+            vy: (Math.random() - 0.5) * 150 - 50, // Slower vertical velocity
             fontSize: word.fontSize,
             fontFamily: word.fontFamily,
-            rotation: (Math.random() - 0.5) * 720,
+            rotation: (Math.random() - 0.5) * 1080, // More rotation for spinning effect
           }));
           
           newExplodingLetters.push(...explosionLetters);

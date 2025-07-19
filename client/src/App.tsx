@@ -41,7 +41,7 @@ function App() {
   };
 
   return (
-    <div className="relative w-full h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-black overflow-hidden">
+    <div className="relative w-full h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-black overflow-hidden" style={{paddingBottom: 0, marginBottom: 0}}>
       {showCanvas && (
         <>
           {/* Cyberpunk Background */}
