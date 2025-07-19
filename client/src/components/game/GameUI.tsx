@@ -7,7 +7,7 @@ export default function GameUI() {
   const { score, wordsTyped, accuracy, missedWords } = useWordRain();
   const { toggleMute, isMuted } = useAudio();
 
-  if (phase !== "playing") return null;
+  if (phase !== "playing" && phase !== "ended") return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 pointer-events-none">
