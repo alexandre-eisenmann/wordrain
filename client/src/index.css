@@ -8,13 +8,14 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    width: 100vw;
-    height: 100vh;
-  }
+  @apply font-sans antialiased bg-background text-foreground;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+}
 }
 
 #root {
@@ -27,4 +28,10 @@ canvas {
   width: 100% !important;
   height: 100% !important;
   touch-action: none;
+}
+
+/* Cyberpunk animations */
+@keyframes scan-line {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
