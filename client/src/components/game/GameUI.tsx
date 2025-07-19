@@ -28,6 +28,7 @@ export default function GameUI() {
           <div className="flex items-center">
             <button
               onClick={toggleMute}
+              onMouseDown={(e) => e.preventDefault()} // Prevent focus stealing
               className="text-cyan-300 hover:text-cyan-400 transition-colors duration-200 p-2"
               aria-label={isMuted ? "Unmute" : "Mute"}
             >

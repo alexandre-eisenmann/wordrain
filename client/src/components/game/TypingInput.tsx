@@ -15,6 +15,19 @@ export default function TypingInput() {
     }
   }, [phase]);
 
+  // Keep focus on the input during gameplay
+  useEffect(() => {
+    if (phase === "playing") {
+      const interval = setInterval(() => {
+        if (inputRef.current && document.activeElement !== inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100); // Check every 100ms
+
+      return () => clearInterval(interval);
+    }
+  }, [phase]);
+
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (phase !== "playing") return;
 
