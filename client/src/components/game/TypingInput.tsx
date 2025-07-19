@@ -31,10 +31,27 @@ export default function TypingInput() {
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (phase !== "playing") return;
 
-    const key = event.key.toLowerCase();
+    let key = event.key;
+    
+    // Handle space key specifically
+    if (event.code === "Space") {
+      event.preventDefault();
+      const result = typeKey(" ");
+      
+      if (result.hit) {
+        playHit();
+      }
+      if (result.completed) {
+        playSuccess();
+      }
+      return;
+    }
+    
+    // Handle other keys
+    key = key.toLowerCase();
     
     // Only handle letter keys and common punctuation
-    if (/^[a-z0-9\s.,!?'-]$/.test(key)) {
+    if (/^[a-z0-9.,!?'-]$/.test(key)) {
       event.preventDefault();
       const result = typeKey(key);
       

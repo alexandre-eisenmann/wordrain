@@ -25,6 +25,7 @@ export interface ExplodingLetter {
   fontSize: number;
   fontFamily: string;
   rotation: number;
+  duration: number;
 }
 
 interface WordRainState {
@@ -57,7 +58,7 @@ export const useWordRain = create<WordRainState>((set, get) => ({
   spawnWord: () => {
     const state = get();
     const word = getRandomWord();
-    const fontSize = Math.random() * 35 + 20; // 20-55px for more variety
+    const fontSize = Math.random() * 80 + 20; // 20-100px for much more variety
     
     // Increase speed based on score/difficulty
     const difficulty = Math.floor(state.wordsTyped / 10);
@@ -118,7 +119,7 @@ export const useWordRain = create<WordRainState>((set, get) => ({
     // Update exploding letters
     const activeExplodingLetters = state.explodingLetters.filter((letter) => {
       const age = Date.now() - parseInt(letter.id.split('-')[2]); // Updated to match new ID format
-      return age < 3000; // Remove after 3 seconds to match animation duration
+      return age < letter.duration * 1000; // Remove after individual letter duration
     });
 
     set({
@@ -137,9 +138,10 @@ export const useWordRain = create<WordRainState>((set, get) => ({
     const updatedWords = state.words.map((word) => {
       if (word.completed) return word;
 
-      const expectedChar = word.text[word.cursorPosition]?.toLowerCase();
+      const expectedChar = word.text[word.cursorPosition];
       
-      if (expectedChar === key) {
+      // Handle all characters (spaces, letters, numbers, punctuation) - case sensitive
+      if ((key === " " && expectedChar === " ") || expectedChar === key) {
         hit = true;
         const newCursorPosition = word.cursorPosition + 1;
         
@@ -153,11 +155,12 @@ export const useWordRain = create<WordRainState>((set, get) => ({
             char,
             x: word.x + (index * word.fontSize * 0.6),
             y: word.y,
-            vx: (Math.random() - 0.5) * 200, // Slower horizontal velocity
-            vy: (Math.random() - 0.5) * 150 - 50, // Slower vertical velocity
+            vx: (Math.random() - 0.5) * 3000, // Higher horizontal velocity range
+            vy: (Math.random() - 0.5) * 3000, // Higher vertical velocity range with upward bias
             fontSize: word.fontSize,
             fontFamily: word.fontFamily,
-            rotation: (Math.random() - 0.5) * 1080, // More rotation for spinning effect
+            rotation: (Math.random() - 0.5) * 7200, // Much more rotation for spinning effect
+            duration: Math.random() * 4 + 2, // Random duration between 2-6 seconds
           }));
           
           newExplodingLetters.push(...explosionLetters);

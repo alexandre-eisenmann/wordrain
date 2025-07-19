@@ -23,7 +23,7 @@ export default function FallingWord({ word }: FallingWordProps) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="relative">
+      <div className="relative whitespace-pre">
         {text.split("").map((letter, index) => (
           <span
             key={index}
@@ -42,7 +42,7 @@ export default function FallingWord({ word }: FallingWordProps) {
                 : "2px 2px 4px rgba(0,0,0,0.5)",
             }}
           >
-            {letter}
+            {letter === " " ? "\u00A0" : letter}
             {index === cursorPosition && (
               <span 
                 className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-400 animate-pulse"
