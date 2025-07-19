@@ -12,8 +12,8 @@ export default function GameUI() {
   return (
     <div className="fixed bottom-0 left-0 right-0 pointer-events-none">
       {/* Horizontal Bottom Bar */}
-      <div className="bg-gray-900 bg-opacity-90 backdrop-blur-sm border-t border-cyan-400 border-opacity-30 pointer-events-auto" style={{boxShadow: "0 -5px 15px rgba(34, 211, 238, 0.1)"}}>
-        <div className="flex items-center justify-between px-6 py-3 font-mono">
+      <div className="bg-gray-900 bg-opacity-90 backdrop-blur-sm border-t border-cyan-400 border-opacity-30 pointer-events-auto" style={{boxShadow: "0 -5px 15px rgba(34, 211, 238, 0.1)", paddingBottom: "env(safe-area-inset-bottom, 0px)"}}>
+        <div className="flex items-center justify-between px-6 py-4 font-mono">
           {/* Left side - Main Score */}
           <div className="flex items-center space-x-8">
             <div className="text-2xl font-bold text-cyan-400">SCORE: {score}</div>

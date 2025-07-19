@@ -149,7 +149,7 @@ export const useWordRain = create<WordRainState>((set, get) => ({
           
           // Create exploding letters for each character
           const explosionLetters = word.text.split("").map((char, index) => ({
-            id: `explosion-${Date.now()}-${index}`,
+            id: `explosion-${word.id}-${Date.now()}-${index}`,
             char,
             x: word.x + (index * word.fontSize * 0.6),
             y: word.y,
