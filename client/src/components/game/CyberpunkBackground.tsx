@@ -39,17 +39,7 @@ export default function CyberpunkBackground() {
     
     setGridLines(lines);
     
-    // Animate opacity changes
-    const interval = setInterval(() => {
-      setGridLines(prevLines => 
-        prevLines.map(line => ({
-          ...line,
-          opacity: Math.random() * 0.4 + 0.1
-        }))
-      );
-    }, 2000);
-    
-    return () => clearInterval(interval);
+    // Keep grid static to avoid movement illusion
   }, []);
 
   return (

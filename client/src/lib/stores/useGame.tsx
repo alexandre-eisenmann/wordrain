@@ -20,6 +20,7 @@ export const useGame = create<GameState>()(
       set((state) => {
         // Only transition from ready to playing
         if (state.phase === "ready") {
+          console.log("Game started");
           return { phase: "playing" };
         }
         return {};
@@ -27,6 +28,7 @@ export const useGame = create<GameState>()(
     },
     
     restart: () => {
+      console.log("Game restarted");
       set(() => ({ phase: "ready" }));
     },
     

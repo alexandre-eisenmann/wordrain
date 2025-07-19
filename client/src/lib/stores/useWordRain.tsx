@@ -58,12 +58,17 @@ export const useWordRain = create<WordRainState>((set, get) => ({
     const word = getRandomWord();
     const fontSize = Math.random() * 35 + 20; // 20-55px for more variety
     
+    // Increase speed based on score/difficulty
+    const difficulty = Math.floor(state.wordsTyped / 10);
+    const baseSpeed = 1.5 + (difficulty * 0.3); // Start at 1.5, increase by 0.3 every 10 words
+    const speed = baseSpeed + (Math.random() * 1.5); // Add some randomness
+    
     const newWord: Word = {
       id: Math.random().toString(36).substr(2, 9),
       text: word,
       x: Math.random() * (window.innerWidth - 300),
       y: -50,
-      speed: Math.random() * 2 + 1, // 1-3 pixels per frame
+      speed,
       fontSize,
       fontFamily: getFontFamily(),
       cursorPosition: 0,

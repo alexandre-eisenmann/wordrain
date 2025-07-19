@@ -36,6 +36,7 @@ function App() {
   };
 
   const handleRestartGame = () => {
+    console.log("Restart button clicked");
     restart();
   };
 
@@ -52,7 +53,7 @@ function App() {
           {/* Game UI Overlay */}
           <GameUI />
           
-          {/* Typing Input */}
+          {/* Hidden Typing Input for key capture */}
           <TypingInput />
           
           {/* Start/Restart Menu */}

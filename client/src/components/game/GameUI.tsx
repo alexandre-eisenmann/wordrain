@@ -45,12 +45,7 @@ export default function GameUI() {
         </div>
       </div>
 
-      {/* Game Instructions */}
-      <div className="mt-4 text-center">
-        <div className="inline-block bg-gray-900 bg-opacity-60 backdrop-blur-sm rounded-lg px-4 py-2 text-cyan-200 text-sm font-mono border border-cyan-400 border-opacity-30">
-          INTERCEPT FALLING DATA STREAMS - DON'T LET 5 ESCAPE
-        </div>
-      </div>
+
     </div>
   );
 }
