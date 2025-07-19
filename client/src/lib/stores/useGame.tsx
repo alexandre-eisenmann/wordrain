@@ -18,8 +18,8 @@ export const useGame = create<GameState>()(
     
     start: () => {
       set((state) => {
-        // Only transition from ready to playing
-        if (state.phase === "ready") {
+        // Transition from ready or ended to playing
+        if (state.phase === "ready" || state.phase === "ended") {
           console.log("Game started");
           return { phase: "playing" };
         }

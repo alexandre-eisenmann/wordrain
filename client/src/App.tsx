@@ -37,7 +37,7 @@ function App() {
 
   const handleRestartGame = () => {
     console.log("Restart button clicked");
-    start(); // Start directly instead of going to restart phase
+    start(); // Start directly from ended phase
   };
 
   return (
