@@ -1,0 +1,47 @@
+import { motion } from "framer-motion";
+import { Word } from "../../lib/stores/useWordRain";
+
+interface FallingWordProps {
+  word: Word;
+}
+
+export default function FallingWord({ word }: FallingWordProps) {
+  const { text, x, y, fontSize, fontFamily, cursorPosition, completed } = word;
+
+  if (completed) return null;
+
+  return (
+    <motion.div
+      className="absolute pointer-events-none select-none"
+      style={{
+        left: `${x}px`,
+        top: `${y}px`,
+        fontSize: `${fontSize}px`,
+        fontFamily: fontFamily,
+      }}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="relative">
+        {text.split("").map((letter, index) => (
+          <span
+            key={index}
+            className={`inline-block transition-all duration-200 ${
+              index < cursorPosition
+                ? "text-green-400 scale-110"
+                : index === cursorPosition
+                ? "text-yellow-300 animate-pulse bg-yellow-300 bg-opacity-20 rounded"
+                : "text-white"
+            }`}
+            style={{
+              textShadow: index === cursorPosition ? "0 0 10px rgba(255, 255, 0, 0.5)" : "2px 2px 4px rgba(0,0,0,0.5)",
+            }}
+          >
+            {letter}
+          </span>
+        ))}
+      </div>
+    </motion.div>
+  );
+}

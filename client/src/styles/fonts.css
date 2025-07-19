@@ -1,0 +1,108 @@
+/* Import Google Fonts for beautiful typography */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Merriweather:wght@300;400;700&family=Open+Sans:wght@300;400;600;700&family=Roboto:wght@300;400;500;700&family=Lato:wght@300;400;700&family=Fira+Code:wght@300;400;500;700&family=Source+Code+Pro:wght@300;400;600;700&display=swap');
+
+/* Custom font stack definitions for consistent typography */
+.font-serif {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.font-sans {
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.font-mono {
+  font-family: 'Fira Code', 'Courier New', monospace;
+}
+
+.font-display {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+}
+
+.font-body {
+  font-family: 'Merriweather', Georgia, serif;
+}
+
+.font-ui {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Typography effects for enhanced visual appeal */
+.text-glow {
+  text-shadow: 0 0 10px currentColor;
+}
+
+.text-outline {
+  -webkit-text-stroke: 1px currentColor;
+  text-stroke: 1px currentColor;
+}
+
+.text-3d {
+  text-shadow: 
+    1px 1px 0 rgba(0,0,0,0.3),
+    2px 2px 0 rgba(0,0,0,0.2),
+    3px 3px 0 rgba(0,0,0,0.1);
+}
+
+/* Animation classes for dynamic typography */
+.letter-bounce {
+  animation: letterBounce 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes letterBounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-5px); }
+}
+
+.letter-glow {
+  animation: letterGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes letterGlow {
+  0% { text-shadow: 0 0 5px currentColor; }
+  100% { text-shadow: 0 0 20px currentColor, 0 0 30px currentColor; }
+}
+
+.letter-scale {
+  animation: letterScale 0.3s ease-in-out;
+}
+
+@keyframes letterScale {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* Cursor effects */
+.typing-cursor {
+  position: relative;
+}
+
+.typing-cursor::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: currentColor;
+  animation: cursorBlink 1s ease-in-out infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Responsive typography */
+@media (max-width: 768px) {
+  .responsive-text {
+    font-size: clamp(1rem, 4vw, 2rem);
+  }
+}
+
+@media (min-width: 769px) {
+  .responsive-text {
+    font-size: clamp(1.5rem, 3vw, 3rem);
+  }
+}
