@@ -96,13 +96,16 @@ export const useWordRain = create<WordRainState>((set, get) => ({
     
     if (wordsAtBottom.length > 0) {
       newMissedWords += wordsAtBottom.length;
+      console.log(`Missed ${wordsAtBottom.length} word(s). Total missed: ${newMissedWords}/5`);
+      
       if (newMissedWords >= 5) {
+        console.log("Game ending - 5 words missed!");
         end();
         return;
       }
     }
 
-    // Remove completed words and words that are off-screen
+    // Remove completed words and missed words that are off-screen
     const activeWords = updatedWords.filter((word) => !word.completed && word.y < window.innerHeight + 100);
 
     // Update exploding letters
@@ -196,11 +199,11 @@ export const useWordRain = create<WordRainState>((set, get) => ({
 }));
 
 // Reset game when game phase changes to ready
-useWordRain.subscribe(
-  (state) => state,
-  () => {
-    const gamePhase = useGame.getState().phase;
-    if (gamePhase === "ready") {
+useGame.subscribe(
+  (state) => state.phase,
+  (phase) => {
+    if (phase === "ready") {
+      console.log("Resetting game due to phase change to ready");
       useWordRain.getState().reset();
     }
   }
