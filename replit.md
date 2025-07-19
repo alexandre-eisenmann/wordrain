@@ -2,11 +2,13 @@
 
 ## Overview
 
-A modern typing game built with React, TypeScript, and Express.js where players type falling words before they reach the bottom of the screen. Features beautiful typography animations, sound effects, and progressive difficulty scaling.
+A cyberpunk-themed typing game built with React, TypeScript, and Express.js where players intercept falling data streams before they breach the system. Features dynamic typography, explosion animations, sound effects, and a cyberpunk aesthetic with animated backgrounds.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Visual style: Cyberpunk aesthetic with cyan/blue color scheme and grid backgrounds
+Game mechanics: Lives system (miss 5 words to end game), sound on by default, subtle cursor styling
 
 ## System Architecture
 

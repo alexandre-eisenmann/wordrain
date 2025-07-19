@@ -27,33 +27,29 @@ const WORD_LISTS = {
   ]
 };
 
-// Font families for beautiful typography
+// Font families for cyberpunk typography
 const FONT_FAMILIES = [
-  // Serif fonts
-  'Georgia, serif',
-  'Times, serif', 
-  '"Times New Roman", serif',
-  '"Playfair Display", serif',
-  '"Merriweather", serif',
-  
-  // Sans-serif fonts
-  'Arial, sans-serif',
-  'Helvetica, sans-serif',
-  '"Open Sans", sans-serif',
-  '"Roboto", sans-serif',
-  '"Lato", sans-serif',
-  
-  // Monospace fonts
+  // Monospace fonts (primary for cyberpunk aesthetic)
   '"Courier New", monospace',
   'Monaco, monospace',
   '"Fira Code", monospace',
   '"Source Code Pro", monospace',
+  '"JetBrains Mono", monospace',
   
-  // Display fonts
+  // Tech/Display fonts
   '"Impact", fantasy',
-  '"Brush Script MT", cursive',
-  '"Lucida Handwriting", cursive',
-  '"Comic Sans MS", cursive'
+  '"Arial Black", sans-serif',
+  '"Roboto Condensed", sans-serif',
+  
+  // Clean Sans-serif
+  'Arial, sans-serif',
+  'Helvetica, sans-serif',
+  '"Roboto", sans-serif',
+  
+  // Bold display
+  '"Orbitron", sans-serif',
+  '"Exo 2", sans-serif',
+  '"Rajdhani", sans-serif'
 ];
 
 // Get a random word from all categories

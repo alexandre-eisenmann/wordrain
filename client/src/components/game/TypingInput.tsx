@@ -40,11 +40,14 @@ export default function TypingInput() {
     <input
       ref={inputRef}
       type="text"
-      className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-64 px-4 py-2 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 backdrop-blur-sm"
-      placeholder="Type here..."
+      className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-64 px-4 py-2 bg-gray-900 bg-opacity-80 border border-cyan-400 border-opacity-50 rounded-lg text-cyan-300 placeholder-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 backdrop-blur-sm font-mono"
+      placeholder="INPUT STREAM..."
       onKeyDown={handleKeyDown}
       autoComplete="off"
       spellCheck={false}
+      style={{
+        boxShadow: "0 0 15px rgba(34, 211, 238, 0.3)"
+      }}
     />
   );
 }

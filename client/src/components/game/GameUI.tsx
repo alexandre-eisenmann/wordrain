@@ -4,7 +4,7 @@ import { useAudio } from "../../lib/stores/useAudio";
 
 export default function GameUI() {
   const { phase } = useGame();
-  const { score, wordsTyped, accuracy } = useWordRain();
+  const { score, wordsTyped, accuracy, missedWords } = useWordRain();
   const { toggleMute, isMuted } = useAudio();
 
   if (phase !== "playing") return null;
@@ -13,19 +13,22 @@ export default function GameUI() {
     <div className="absolute top-4 left-4 right-4 pointer-events-none">
       {/* Score and Stats */}
       <div className="flex justify-between items-start">
-        <div className="bg-black bg-opacity-50 backdrop-blur-sm rounded-lg p-4 text-white pointer-events-auto">
-          <div className="space-y-2">
-            <div className="text-2xl font-bold">Score: {score}</div>
-            <div className="text-sm opacity-80">Words: {wordsTyped}</div>
-            <div className="text-sm opacity-80">Accuracy: {accuracy.toFixed(1)}%</div>
+        <div className="bg-gray-900 bg-opacity-80 backdrop-blur-sm rounded-lg p-4 text-cyan-100 pointer-events-auto border border-cyan-400 border-opacity-30" style={{boxShadow: "0 0 15px rgba(34, 211, 238, 0.2)"}}>
+          <div className="space-y-2 font-mono">
+            <div className="text-2xl font-bold text-cyan-400">SCORE: {score}</div>
+            <div className="text-sm text-cyan-200">WORDS: {wordsTyped}</div>
+            <div className="text-sm text-cyan-200">ACCURACY: {accuracy.toFixed(1)}%</div>
+            <div className={`text-sm font-bold ${missedWords >= 3 ? 'text-red-400' : 'text-orange-400'}`}>
+              MISSED: {missedWords}/5
+            </div>
           </div>
         </div>
 
         {/* Controls */}
-        <div className="bg-black bg-opacity-50 backdrop-blur-sm rounded-lg p-4 pointer-events-auto">
+        <div className="bg-gray-900 bg-opacity-80 backdrop-blur-sm rounded-lg p-4 pointer-events-auto border border-cyan-400 border-opacity-30" style={{boxShadow: "0 0 15px rgba(34, 211, 238, 0.2)"}}>
           <button
             onClick={toggleMute}
-            className="text-white hover:text-yellow-300 transition-colors duration-200"
+            className="text-cyan-300 hover:text-cyan-400 transition-colors duration-200"
             aria-label={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted ? (
@@ -44,8 +47,8 @@ export default function GameUI() {
 
       {/* Game Instructions */}
       <div className="mt-4 text-center">
-        <div className="inline-block bg-black bg-opacity-30 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm">
-          Type the falling words before they reach the bottom!
+        <div className="inline-block bg-gray-900 bg-opacity-60 backdrop-blur-sm rounded-lg px-4 py-2 text-cyan-200 text-sm font-mono border border-cyan-400 border-opacity-30">
+          INTERCEPT FALLING DATA STREAMS - DON'T LET 5 ESCAPE
         </div>
       </div>
     </div>

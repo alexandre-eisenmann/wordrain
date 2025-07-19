@@ -4,6 +4,7 @@ import { useGame } from "./lib/stores/useGame";
 import WordRainCanvas from "./components/game/WordRainCanvas";
 import GameUI from "./components/game/GameUI";
 import TypingInput from "./components/game/TypingInput";
+import CyberpunkBackground from "./components/game/CyberpunkBackground";
 import "./styles/fonts.css";
 import "@fontsource/inter";
 
@@ -39,9 +40,12 @@ function App() {
   };
 
   return (
-    <div className="relative w-full h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-indigo-900 overflow-hidden">
+    <div className="relative w-full h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-black overflow-hidden">
       {showCanvas && (
         <>
+          {/* Cyberpunk Background */}
+          <CyberpunkBackground />
+          
           {/* Game Canvas */}
           <WordRainCanvas />
           
@@ -53,19 +57,22 @@ function App() {
           
           {/* Start/Restart Menu */}
           {phase === "ready" && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-              <div className="text-center p-8 bg-white bg-opacity-10 rounded-2xl backdrop-blur-md border border-white border-opacity-20">
-                <h1 className="text-6xl font-bold text-white mb-4 font-serif">
-                  Word<span className="text-blue-300">Rain</span>
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
+              <div className="text-center p-8 bg-gray-900 bg-opacity-80 rounded-2xl backdrop-blur-md border border-cyan-400 border-opacity-50 shadow-2xl">
+                <h1 className="text-6xl font-bold text-white mb-4 font-mono tracking-wider">
+                  Word<span className="text-cyan-400 text-shadow-glow">Rain</span>
                 </h1>
-                <p className="text-xl text-gray-200 mb-8 font-light">
-                  Type fast. Think faster. Don't let the words touch the ground.
+                <p className="text-xl text-cyan-100 mb-8 font-light">
+                  Type fast. Think faster. Don't miss 5 words.
                 </p>
                 <button
                   onClick={handleStartGame}
-                  className="px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg text-xl transition-colors duration-200"
+                  className="px-8 py-4 bg-cyan-600 hover:bg-cyan-500 text-black font-semibold rounded-lg text-xl transition-all duration-200 shadow-lg hover:shadow-cyan-400/25"
+                  style={{
+                    boxShadow: "0 0 20px rgba(34, 211, 238, 0.3)"
+                  }}
                 >
-                  Start Game
+                  START PROTOCOL
                 </button>
               </div>
             </div>
@@ -73,17 +80,20 @@ function App() {
           
           {/* Game Over Screen */}
           {phase === "ended" && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-              <div className="text-center p-8 bg-white bg-opacity-10 rounded-2xl backdrop-blur-md border border-white border-opacity-20">
-                <h2 className="text-4xl font-bold text-white mb-4">Game Over</h2>
-                <p className="text-lg text-gray-200 mb-6">
-                  The words have reached the ground!
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
+              <div className="text-center p-8 bg-gray-900 bg-opacity-80 rounded-2xl backdrop-blur-md border border-red-400 border-opacity-50 shadow-2xl">
+                <h2 className="text-4xl font-bold text-red-400 mb-4 font-mono">SYSTEM BREACH</h2>
+                <p className="text-lg text-red-200 mb-6">
+                  Security protocol failed - 5 words escaped!
                 </p>
                 <button
                   onClick={handleRestartGame}
-                  className="px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg text-xl transition-colors duration-200"
+                  className="px-8 py-4 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg text-xl transition-all duration-200 shadow-lg hover:shadow-red-400/25"
+                  style={{
+                    boxShadow: "0 0 20px rgba(239, 68, 68, 0.3)"
+                  }}
                 >
-                  Play Again
+                  RESTART PROTOCOL
                 </button>
               </div>
             </div>

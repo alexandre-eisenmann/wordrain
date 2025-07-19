@@ -34,6 +34,7 @@ interface WordRainState {
   totalKeystrokes: number;
   correctKeystrokes: number;
   accuracy: number;
+  missedWords: number;
   
   // Actions
   spawnWord: () => void;
@@ -50,16 +51,17 @@ export const useWordRain = create<WordRainState>((set, get) => ({
   totalKeystrokes: 0,
   correctKeystrokes: 0,
   accuracy: 100,
+  missedWords: 0,
 
   spawnWord: () => {
     const state = get();
     const word = getRandomWord();
-    const fontSize = Math.random() * 20 + 24; // 24-44px
+    const fontSize = Math.random() * 35 + 20; // 20-55px for more variety
     
     const newWord: Word = {
       id: Math.random().toString(36).substr(2, 9),
       text: word,
-      x: Math.random() * (window.innerWidth - 200),
+      x: Math.random() * (window.innerWidth - 300),
       y: -50,
       speed: Math.random() * 2 + 1, // 1-3 pixels per frame
       fontSize,
@@ -83,11 +85,16 @@ export const useWordRain = create<WordRainState>((set, get) => ({
       y: word.y + word.speed,
     }));
 
-    // Check for words that reached the bottom
+    // Check for words that reached the bottom (missed words)
     const wordsAtBottom = updatedWords.filter((word) => word.y > window.innerHeight && !word.completed);
+    let newMissedWords = state.missedWords;
+    
     if (wordsAtBottom.length > 0) {
-      end();
-      return;
+      newMissedWords += wordsAtBottom.length;
+      if (newMissedWords >= 5) {
+        end();
+        return;
+      }
     }
 
     // Remove completed words and words that are off-screen
@@ -102,6 +109,7 @@ export const useWordRain = create<WordRainState>((set, get) => ({
     set({
       words: activeWords,
       explodingLetters: activeExplodingLetters,
+      missedWords: newMissedWords,
     });
   },
 
@@ -177,6 +185,7 @@ export const useWordRain = create<WordRainState>((set, get) => ({
       totalKeystrokes: 0,
       correctKeystrokes: 0,
       accuracy: 100,
+      missedWords: 0,
     });
   },
 }));

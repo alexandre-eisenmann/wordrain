@@ -27,18 +27,30 @@ export default function FallingWord({ word }: FallingWordProps) {
         {text.split("").map((letter, index) => (
           <span
             key={index}
-            className={`inline-block transition-all duration-200 ${
+            className={`inline-block transition-all duration-200 relative ${
               index < cursorPosition
-                ? "text-green-400 scale-110"
+                ? "text-cyan-400 scale-110"
                 : index === cursorPosition
-                ? "text-yellow-300 animate-pulse bg-yellow-300 bg-opacity-20 rounded"
+                ? "text-cyan-300"
                 : "text-white"
             }`}
             style={{
-              textShadow: index === cursorPosition ? "0 0 10px rgba(255, 255, 0, 0.5)" : "2px 2px 4px rgba(0,0,0,0.5)",
+              textShadow: index < cursorPosition 
+                ? "0 0 8px rgba(34, 211, 238, 0.6)" 
+                : index === cursorPosition 
+                ? "0 0 8px rgba(103, 232, 249, 0.8)" 
+                : "2px 2px 4px rgba(0,0,0,0.5)",
             }}
           >
             {letter}
+            {index === cursorPosition && (
+              <span 
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400 animate-pulse"
+                style={{
+                  boxShadow: "0 0 4px rgba(34, 211, 238, 0.8)"
+                }}
+              />
+            )}
           </span>
         ))}
       </div>
