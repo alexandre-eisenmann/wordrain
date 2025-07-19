@@ -205,11 +205,12 @@ export const useWordRain = create<WordRainState>((set, get) => ({
   },
 }));
 
-// Reset game when game phase changes to ready
+// Reset game when transitioning to playing phase
 useGame.subscribe(
   (state) => state.phase,
   (phase) => {
-    if (phase === "ready") {
+    if (phase === "playing") {
+      console.log("Resetting WordRain due to game start");
       useWordRain.getState().reset();
     }
   }
