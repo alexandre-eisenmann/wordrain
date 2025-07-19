@@ -12,6 +12,7 @@ export interface Word {
   fontFamily: string;
   cursorPosition: number;
   completed: boolean;
+  missed: boolean;
 }
 
 export interface ExplodingLetter {
@@ -73,6 +74,7 @@ export const useWordRain = create<WordRainState>((set, get) => ({
       fontFamily: getFontFamily(),
       cursorPosition: 0,
       completed: false,
+      missed: false,
     };
 
     set((state) => ({
@@ -90,23 +92,28 @@ export const useWordRain = create<WordRainState>((set, get) => ({
       y: word.y + word.speed,
     }));
 
-    // Check for words that reached the bottom (missed words)
-    const wordsAtBottom = updatedWords.filter((word) => word.y > window.innerHeight && !word.completed);
+    // Check for words that reached the bottom (missed words) - only count each word once
+    const newlyMissedWords = updatedWords.filter((word) => 
+      word.y > window.innerHeight && 
+      !word.completed && 
+      !word.missed // Only count words that haven't been counted yet
+    );
+    
     let newMissedWords = state.missedWords;
     
-    if (wordsAtBottom.length > 0) {
-      newMissedWords += wordsAtBottom.length;
-      console.log(`Missed ${wordsAtBottom.length} word(s). Total missed: ${newMissedWords}/5`);
+    // Mark newly missed words and count them
+    if (newlyMissedWords.length > 0) {
+      newlyMissedWords.forEach(word => word.missed = true);
+      newMissedWords += newlyMissedWords.length;
       
       if (newMissedWords >= 5) {
-        console.log("Game ending - 5 words missed!");
         end();
         return;
       }
     }
 
-    // Remove completed words and missed words that are off-screen
-    const activeWords = updatedWords.filter((word) => !word.completed && word.y < window.innerHeight + 100);
+    // Remove completed words and words that are far off-screen (but keep recently missed ones visible)
+    const activeWords = updatedWords.filter((word) => !word.completed && word.y < window.innerHeight + 200);
 
     // Update exploding letters
     const activeExplodingLetters = state.explodingLetters.filter((letter) => {
@@ -203,7 +210,6 @@ useGame.subscribe(
   (state) => state.phase,
   (phase) => {
     if (phase === "ready") {
-      console.log("Resetting game due to phase change to ready");
       useWordRain.getState().reset();
     }
   }
