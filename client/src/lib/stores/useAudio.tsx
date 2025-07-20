@@ -1,15 +1,14 @@
 import { create } from "zustand";
+import { Howl, Howler } from "howler";
 
 interface AudioState {
-  backgroundMusic: HTMLAudioElement | null;
-  hitSound: HTMLAudioElement | null;
-  successSound: HTMLAudioElement | null;
+  hitSound: Howl | null;
+  successSound: Howl | null;
   isMuted: boolean;
   
   // Setter functions
-  setBackgroundMusic: (music: HTMLAudioElement) => void;
-  setHitSound: (sound: HTMLAudioElement) => void;
-  setSuccessSound: (sound: HTMLAudioElement) => void;
+  setHitSound: (sound: Howl) => void;
+  setSuccessSound: (sound: Howl) => void;
   
   // Control functions
   toggleMute: () => void;
@@ -18,20 +17,27 @@ interface AudioState {
 }
 
 export const useAudio = create<AudioState>((set, get) => ({
-  backgroundMusic: null,
   hitSound: null,
   successSound: null,
   isMuted: false, // Start with sound on by default
   
-  setBackgroundMusic: (music) => set({ backgroundMusic: music }),
-  setHitSound: (sound) => set({ hitSound: sound }),
-  setSuccessSound: (sound) => set({ successSound: sound }),
+  setHitSound: (sound) => {
+    console.log("Setting hit sound");
+    set({ hitSound: sound });
+  },
+  setSuccessSound: (sound) => {
+    console.log("Setting success sound");
+    set({ successSound: sound });
+  },
   
   toggleMute: () => {
     const { isMuted } = get();
     const newMutedState = !isMuted;
     
-    // Just update the muted state
+    // Update Howler global mute state
+    Howler.mute(newMutedState);
+    
+    // Update local state
     set({ isMuted: newMutedState });
     
     // Log the change
@@ -40,35 +46,37 @@ export const useAudio = create<AudioState>((set, get) => ({
   
   playHit: () => {
     const { hitSound, isMuted } = get();
-    if (hitSound) {
-      // If sound is muted, don't play anything
-      if (isMuted) {
-        console.log("Hit sound skipped (muted)");
-        return;
+    console.log("Attempting to play hit sound", { hitSound: !!hitSound, isMuted });
+    
+    if (hitSound && !isMuted) {
+      try {
+        const soundId = hitSound.play();
+        console.log("Hit sound played with ID:", soundId);
+      } catch (error) {
+        console.error("Hit sound play failed:", error);
       }
-      
-      // Clone the sound to allow overlapping playback
-      const soundClone = hitSound.cloneNode() as HTMLAudioElement;
-      soundClone.volume = 0.3;
-      soundClone.play().catch(error => {
-        console.log("Hit sound play prevented:", error);
-      });
+    } else if (isMuted) {
+      console.log("Hit sound skipped (muted)");
+    } else {
+      console.log("Hit sound not available");
     }
   },
   
   playSuccess: () => {
     const { successSound, isMuted } = get();
-    if (successSound) {
-      // If sound is muted, don't play anything
-      if (isMuted) {
-        console.log("Success sound skipped (muted)");
-        return;
+    console.log("Attempting to play success sound", { successSound: !!successSound, isMuted });
+    
+    if (successSound && !isMuted) {
+      try {
+        const soundId = successSound.play();
+        console.log("Success sound played with ID:", soundId);
+      } catch (error) {
+        console.error("Success sound play failed:", error);
       }
-      
-      successSound.currentTime = 0;
-      successSound.play().catch(error => {
-        console.log("Success sound play prevented:", error);
-      });
+    } else if (isMuted) {
+      console.log("Success sound skipped (muted)");
+    } else {
+      console.log("Success sound not available");
     }
   }
 }));

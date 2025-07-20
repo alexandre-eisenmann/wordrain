@@ -5,32 +5,68 @@ import WordRainCanvas from "./components/game/WordRainCanvas";
 import GameUI from "./components/game/GameUI";
 import TypingInput from "./components/game/TypingInput";
 import CyberpunkBackground from "./components/game/CyberpunkBackground";
+import { Howl, Howler } from "howler";
 import "./styles/fonts.css";
 import "@fontsource/inter";
 
 function App() {
   const { phase, start, restart } = useGame();
-  const { setBackgroundMusic, setHitSound, setSuccessSound } = useAudio();
+  const { setHitSound, setSuccessSound, playHit, playSuccess } = useAudio();
   const [showCanvas, setShowCanvas] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(3); // Start at position 3 (letter 'd')
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
 
   // Initialize audio
   useEffect(() => {
-    const bgMusic = new Audio("/sounds/background.mp3");
-    bgMusic.loop = true;
-    bgMusic.volume = 0.3;
-    setBackgroundMusic(bgMusic);
-
-    const hitAudio = new Audio("/sounds/hit.mp3");
-    hitAudio.volume = 0.5;
+    console.log("Initializing audio...");
+    
+    const hitAudio = new Howl({
+      src: ["/wordrain/sounds/hit.mp3"],
+      volume: 0.5,
+      preload: true,
+      onload: () => console.log("Hit sound loaded successfully"),
+      onloaderror: (id, error) => console.error("Hit sound load error:", error),
+      onplay: () => console.log("Hit sound played"),
+      onplayerror: (id, error) => console.error("Hit sound play error:", error),
+    });
     setHitSound(hitAudio);
 
-    const successAudio = new Audio("/sounds/success.mp3");
-    successAudio.volume = 0.7;
+    const successAudio = new Howl({
+      src: ["/wordrain/sounds/success.mp3"],
+      volume: 0.7,
+      preload: true,
+      onload: () => console.log("Success sound loaded successfully"),
+      onloaderror: (id, error) => console.error("Success sound load error:", error),
+      onplay: () => console.log("Success sound played"),
+      onplayerror: (id, error) => console.error("Success sound play error:", error),
+    });
     setSuccessSound(successAudio);
 
+    console.log("Audio initialization complete");
     setShowCanvas(true);
-  }, [setBackgroundMusic, setHitSound, setSuccessSound]);
+  }, [setHitSound, setSuccessSound]);
+
+  // Global click handler to unlock audio
+  useEffect(() => {
+    const unlockAudio = () => {
+      if (!audioUnlocked) {
+        Howler.ctx.resume();
+        setAudioUnlocked(true);
+        console.log("Audio unlocked on user interaction");
+      }
+    };
+
+    // Add event listeners for user interaction
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('keydown', unlockAudio);
+    document.addEventListener('touchstart', unlockAudio);
+
+    return () => {
+      document.removeEventListener('click', unlockAudio);
+      document.removeEventListener('keydown', unlockAudio);
+      document.removeEventListener('touchstart', unlockAudio);
+    };
+  }, [audioUnlocked]);
 
   const handleStartGame = () => {
     start();
@@ -128,6 +164,7 @@ function App() {
                 >
                   START
                 </button>
+                
               </div>
             </div>
           )}

@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "check": "tsc",
     "predeploy": "pnpm run build",
-    "deploy": "gh-pages -d dist"    
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.5",
@@ -90,6 +90,7 @@
   "devDependencies": {
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
     "@tailwindcss/typography": "^0.5.15",
+    "@types/howler": "^2.2.12",
     "@types/node": "20.16.11",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
