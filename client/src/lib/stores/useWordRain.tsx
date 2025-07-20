@@ -61,7 +61,7 @@ export const useWordRain = create<WordRainState>((set, get) => ({
 
   spawnWord: () => {
     const state = get();
-    const word = getRandomWord();
+    const word = getRandomWord(state.wordsTyped);
     const fontSize = Math.random() * 80 + 20; // 20-100px for much more variety
     
     // Increase speed based on score/difficulty

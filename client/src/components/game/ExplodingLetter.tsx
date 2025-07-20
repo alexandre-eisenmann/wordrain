@@ -8,8 +8,6 @@ interface ExplodingLetterProps {
 export default function ExplodingLetter({ letter }: ExplodingLetterProps) {
   const { char, x, y, vx, vy, fontSize, fontFamily, rotation, duration } = letter;
   
-  // Debug logging to see what values we're getting
-  console.log('ExplodingLetter values:', { x, y, vx, vy, rotation });
 
   return (
     <motion.div
