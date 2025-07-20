@@ -128,11 +128,6 @@ export const useWordRain = create<WordRainState>((set, get) => ({
     if (newlyMissedWords.length > 0) {
       newlyMissedWords.forEach(word => word.missed = true);
       newMissedWords += newlyMissedWords.length;
-      
-      if (newMissedWords >= 5) {
-        end();
-        return;
-      }
     }
 
     // Remove completed words and words that are far off-screen (but keep recently missed ones visible)
@@ -144,11 +139,17 @@ export const useWordRain = create<WordRainState>((set, get) => ({
       return age < letter.duration * 1000; // Remove after individual letter duration
     });
 
+    // Update state with all changes
     set({
       words: activeWords,
       explodingLetters: activeExplodingLetters,
       missedWords: newMissedWords,
     });
+
+    // Check for game over after state update
+    if (newMissedWords >= 5) {
+      end();
+    }
   },
 
   typeKey: (key: string) => {
