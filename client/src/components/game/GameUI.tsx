@@ -10,7 +10,7 @@ export default function GameUI() {
   if (phase !== "playing" && phase !== "ended") return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 pointer-events-none z-40" style={{marginBottom: 0, paddingBottom: 0, bottom: 0}}>
+    <div className="fixed bottom-0 left-0 right-0 pointer-events-none z-40" style={{marginBottom: 0, paddingBottom: 0, bottom: 0}} data-game-ui="true">
       {/* Discrete Cyberpunk Bottom Bar */}
       <div 
         className="relative pointer-events-auto"
@@ -76,6 +76,7 @@ export default function GameUI() {
             <button
               onClick={toggleMute}
               onMouseDown={(e) => e.preventDefault()}
+              data-allow-click="true"
               className="relative group p-2 rounded transition-all duration-200 hover:bg-cyan-900/20"
               aria-label={isMuted ? "Unmute" : "Mute"}
               style={{

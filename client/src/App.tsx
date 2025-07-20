@@ -68,6 +68,60 @@ function App() {
     };
   }, [audioUnlocked]);
 
+  // Disable unwanted mouse events globally
+  useEffect(() => {
+    const preventUnwantedMouseEvents = (e: MouseEvent) => {
+      // Allow clicks on buttons and essential UI elements
+      const target = e.target as HTMLElement;
+      const isButton = target.tagName === 'BUTTON' || 
+                      target.closest('button') !== null ||
+                      target.closest('[data-allow-click]') !== null;
+      
+      // Allow clicks on the title area during ready phase
+      const isTitleArea = phase === "ready" && target.closest('h1') !== null;
+      
+      // Allow clicks on the game UI area
+      const isGameUI = target.closest('[data-game-ui]') !== null;
+      
+      if (!isButton && !isTitleArea && !isGameUI) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    // Prevent drag events that might cause screen movement
+    const preventDrag = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const isButton = target.tagName === 'BUTTON' || 
+                      target.closest('button') !== null ||
+                      target.closest('[data-allow-click]') !== null;
+      
+      if (!isButton) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    // Prevent context menu
+    const preventContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      return false;
+    };
+
+    // Add event listeners
+    document.addEventListener('mousedown', preventUnwantedMouseEvents, { capture: true });
+    document.addEventListener('dragstart', preventDrag, { capture: true });
+    document.addEventListener('contextmenu', preventContextMenu, { capture: true });
+
+    return () => {
+      document.removeEventListener('mousedown', preventUnwantedMouseEvents, { capture: true });
+      document.removeEventListener('dragstart', preventDrag, { capture: true });
+      document.removeEventListener('contextmenu', preventContextMenu, { capture: true });
+    };
+  }, [phase]);
+
   const handleStartGame = () => {
     start();
   };
@@ -157,6 +211,7 @@ function App() {
                 </p>
                 <button
                   onClick={handleStartGame}
+                  data-allow-click="true"
                   className="px-8 py-4 bg-cyan-600 hover:bg-cyan-500 text-black font-semibold rounded-lg text-xl transition-all duration-200 shadow-lg hover:shadow-cyan-400/25"
                   style={{
                     boxShadow: "0 0 20px rgba(34, 211, 238, 0.3)"
@@ -188,6 +243,7 @@ function App() {
                 </p>
                 <button
                   onClick={handleRestartGame}
+                  data-allow-click="true"
                   className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg text-lg transition-all duration-200 shadow-lg hover:shadow-red-400/25"
                   style={{
                     boxShadow: "0 0 20px rgba(239, 68, 68, 0.3)"

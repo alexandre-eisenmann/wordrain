@@ -15,6 +15,10 @@
   width: 100vw;
   height: 100vh;
   min-height: 100vh;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 }
 
@@ -28,6 +32,24 @@ canvas {
   width: 100% !important;
   height: 100% !important;
   touch-action: none;
+  pointer-events: none;
+}
+
+/* Allow text selection and pointer events only on essential elements */
+button, [data-allow-click], [data-game-ui] {
+  user-select: auto;
+  -webkit-user-select: auto;
+  -moz-user-select: auto;
+  -ms-user-select: auto;
+  pointer-events: auto;
+}
+
+/* Prevent text selection on non-essential elements */
+h1, h2, h3, p, div, span {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 /* Cyberpunk animations */

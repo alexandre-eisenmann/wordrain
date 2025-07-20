@@ -57,7 +57,8 @@ export default function CyberpunkBackground() {
       left: shape.x,
       top: shape.y,
       opacity: shape.opacity * (0.5 + 0.5 * Math.sin(time * 0.02 + shape.id.length)),
-      transform: `rotate(${time * 0.5 + shape.id.length}deg)`
+      transform: `rotate(${time * 0.5 + shape.id.length}deg)`,
+      pointerEvents: 'none' as const,
     };
 
     if (shape.type === 'circle') {
@@ -110,7 +111,7 @@ export default function CyberpunkBackground() {
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
       {/* Dynamic gradient background */}
       <div 
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none"
         style={{
           background: `
             radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
@@ -122,12 +123,12 @@ export default function CyberpunkBackground() {
       />
       
       {/* Floating geometric shapes */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 pointer-events-none">
         {shapes.map(renderShape)}
       </div>
       
       {/* Subtle moving lines */}
-      <svg className="absolute inset-0 w-full h-full">
+      <svg className="absolute inset-0 w-full h-full pointer-events-none">
         {[...Array(8)].map((_, i) => (
           <path
             key={`line-${i}`}
@@ -142,7 +143,7 @@ export default function CyberpunkBackground() {
       </svg>
       
       {/* Data stream effect */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 pointer-events-none">
         {[...Array(12)].map((_, i) => (
           <div
             key={`stream-${i}`}
