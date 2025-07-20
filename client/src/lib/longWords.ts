@@ -1,14 +1,14 @@
 const LONG_WORDLIST = [
     "supercalifragilisticexpialidocious",
-    "pneumonoultramicroscopicsilicovolcanoconioses",
     "hippopotomonstrosesquippedaliophobia",
     "antidisestablishmentarianism",
     "floccinaucinihilipilification",
     "pseudopseudohypoparathyroidism",
     "spectrophotofluorometrically",
-    "dichlorodifluoromethane",
     "electroencephalographically",
-    "immunoelectrophoretically"
+    "immunoelectrophoretically",
+    "pneumonoultramicroscopicsilicovolcanoconioses",
+    "dichlorodifluoromethane"
 ];
 
 export { LONG_WORDLIST }; 
