@@ -11,7 +11,6 @@ export default function TypingInput() {
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   const [isFocused, setIsFocused] = useState(false);
-  const [showMobileInput, setShowMobileInput] = useState(false);
 
   useEffect(() => {
     if (phase === "playing" && inputRef.current) {
@@ -25,16 +24,12 @@ export default function TypingInput() {
       const interval = setInterval(() => {
         if (inputRef.current && document.activeElement !== inputRef.current) {
           inputRef.current.focus();
-          // On mobile, show the input button when focus is lost
-          if (isMobile) {
-            setShowMobileInput(true);
-          }
         }
       }, 100); // Check every 100ms
 
       return () => clearInterval(interval);
     }
-  }, [phase, isMobile]);
+  }, [phase]);
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (phase !== "playing") return;
@@ -74,73 +69,39 @@ export default function TypingInput() {
 
   const handleFocus = () => {
     setIsFocused(true);
-    setShowMobileInput(false);
   };
 
   const handleBlur = () => {
     setIsFocused(false);
-    if (isMobile) {
-      setShowMobileInput(true);
-    }
-  };
-
-  const handleMobileInputClick = () => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
   };
 
   if (phase !== "playing") return null;
 
-  // For mobile, show a subtle floating button when keyboard is dismissed
+  // For mobile, show a minimal input field that's always accessible
   if (isMobile) {
     return (
-      <>
-        {/* Hidden input for actual typing */}
+      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
         <input
           ref={inputRef}
           type="text"
-          className="absolute opacity-0 pointer-events-none"
-          style={{
-            position: 'absolute',
-            left: '-9999px',
-            top: '-9999px',
-            width: '1px',
-            height: '1px',
-            opacity: 0,
-            pointerEvents: 'none',
-            background: 'transparent',
-            border: 'none',
-            outline: 'none'
-          }}
+          className={`w-48 px-3 py-2 bg-gray-900 bg-opacity-40 backdrop-blur-sm border rounded-lg text-white text-center font-mono text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-opacity-50 transition-all duration-200 ${
+            isFocused 
+              ? 'border-cyan-300 focus:border-cyan-300 focus:ring-cyan-300' 
+              : 'border-gray-600 border-opacity-30 focus:border-cyan-300 focus:ring-cyan-300'
+          }`}
+          placeholder="tap to type..."
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
           onBlur={handleBlur}
           autoComplete="off"
           spellCheck={false}
+          style={{
+            boxShadow: isFocused 
+              ? "0 0 15px rgba(34, 211, 238, 0.3)" 
+              : "0 0 8px rgba(34, 211, 238, 0.1)"
+          }}
         />
-        
-        {/* Floating keyboard button - only shows when needed */}
-        {showMobileInput && (
-          <button
-            onClick={handleMobileInputClick}
-            className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-gray-900 bg-opacity-60 backdrop-blur-sm border border-cyan-400 border-opacity-30 rounded-full flex items-center justify-center transition-all duration-300 hover:bg-opacity-80 hover:border-opacity-50 hover:scale-110 group"
-            style={{
-              boxShadow: "0 0 15px rgba(34, 211, 238, 0.2)"
-            }}
-            aria-label="Show keyboard"
-          >
-            <svg 
-              className="w-5 h-5 text-cyan-400 group-hover:text-cyan-300 transition-colors duration-200" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </button>
-        )}
-      </>
+      </div>
     );
   }
 

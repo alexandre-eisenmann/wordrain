@@ -8,6 +8,7 @@ import CyberpunkBackground from "./components/game/CyberpunkBackground";
 import { Howl, Howler } from "howler";
 import "./styles/fonts.css";
 import "@fontsource/inter";
+import { useIsMobile } from "./hooks/use-is-mobile";
 
 // Extend Window interface for Howler
 declare global {
@@ -23,6 +24,7 @@ function App() {
   const [showCanvas, setShowCanvas] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(3); // Start at position 3 (letter 'd')
   const [audioContextResumed, setAudioContextResumed] = useState(false);
+  const isMobile = useIsMobile();
 
   // Initialize audio with mobile-specific handling
   useEffect(() => {
@@ -148,7 +150,7 @@ function App() {
     };
   }, []);
 
-  // Disable unwanted mouse events globally
+  // Disable unwanted mouse events globally - but allow pull-to-refresh on mobile
   useEffect(() => {
     const preventUnwantedMouseEvents = (e: MouseEvent) => {
       // Allow clicks on buttons and essential UI elements
@@ -163,19 +165,27 @@ function App() {
       // Allow clicks on the game UI area
       const isGameUI = target.closest('[data-game-ui]') !== null;
       
-      if (!isButton && !isTitleArea && !isGameUI) {
+      // Allow clicks on the typing input area on mobile
+      const isTypingInput = isMobile && target.closest('input') !== null;
+      
+      if (!isButton && !isTitleArea && !isGameUI && !isTypingInput) {
         e.preventDefault();
         e.stopPropagation();
         return false;
       }
     };
 
-    // Prevent drag events that might cause screen movement
+    // Prevent drag events that might cause screen movement - but allow pull-to-refresh on mobile
     const preventDrag = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const isButton = target.tagName === 'BUTTON' || 
                       target.closest('button') !== null ||
                       target.closest('[data-allow-click]') !== null;
+      
+      // On mobile, allow drag events for pull-to-refresh
+      if (isMobile) {
+        return true;
+      }
       
       if (!isButton) {
         e.preventDefault();
@@ -200,7 +210,7 @@ function App() {
       document.removeEventListener('dragstart', preventDrag, { capture: true });
       document.removeEventListener('contextmenu', preventContextMenu, { capture: true });
     };
-  }, [phase]);
+  }, [phase, isMobile]);
 
   const handleStartGame = () => {
     start();
