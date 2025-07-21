@@ -150,7 +150,7 @@ function App() {
     };
   }, []);
 
-  // Disable unwanted mouse events globally - but allow pull-to-refresh on mobile
+  // Disable unwanted mouse events globally - but allow natural interactions
   useEffect(() => {
     const preventUnwantedMouseEvents = (e: MouseEvent) => {
       // Allow clicks on buttons and essential UI elements
@@ -169,24 +169,20 @@ function App() {
       const isTypingInput = isMobile && target.closest('input') !== null;
       
       if (!isButton && !isTitleArea && !isGameUI && !isTypingInput) {
-        e.preventDefault();
+        // Instead of preventing, just stop propagation to allow natural interactions
         e.stopPropagation();
         return false;
       }
     };
 
-    // Prevent drag events that might cause screen movement - but allow pull-to-refresh on mobile
-    const preventDrag = (e: MouseEvent) => {
+    // Allow drag events but prevent unwanted actions
+    const handleDrag = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const isButton = target.tagName === 'BUTTON' || 
                       target.closest('button') !== null ||
                       target.closest('[data-allow-click]') !== null;
       
-      // On mobile, allow drag events for pull-to-refresh
-      if (isMobile) {
-        return true;
-      }
-      
+      // Allow all drag events but prevent default on non-interactive elements
       if (!isButton) {
         e.preventDefault();
         e.stopPropagation();
@@ -202,12 +198,12 @@ function App() {
 
     // Add event listeners
     document.addEventListener('mousedown', preventUnwantedMouseEvents, { capture: true });
-    document.addEventListener('dragstart', preventDrag, { capture: true });
+    document.addEventListener('dragstart', handleDrag, { capture: true });
     document.addEventListener('contextmenu', preventContextMenu, { capture: true });
 
     return () => {
       document.removeEventListener('mousedown', preventUnwantedMouseEvents, { capture: true });
-      document.removeEventListener('dragstart', preventDrag, { capture: true });
+      document.removeEventListener('dragstart', handleDrag, { capture: true });
       document.removeEventListener('contextmenu', preventContextMenu, { capture: true });
     };
   }, [phase, isMobile]);
