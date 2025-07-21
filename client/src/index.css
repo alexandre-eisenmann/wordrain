@@ -62,6 +62,30 @@ h1, h2, h3, p, div, span {
   box-shadow: none !important;
 }
 
+/* Rotating letter animations */
+@keyframes rotate-letter {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.rotate-letter {
+  animation: rotate-letter 5s linear infinite;
+  animation-delay: 2s;
+  display: inline-block;
+  transform-origin: center;
+}
+
+/* Animation delays for different letter counts */
+.rotate-letter:nth-child(1) { animation-delay: 0s; }
+.rotate-letter:nth-child(2) { animation-delay: 0.2s; }
+.rotate-letter:nth-child(3) { animation-delay: 0.4s; }
+.rotate-letter:nth-child(4) { animation-delay: 0.6s; }
+.rotate-letter:nth-child(5) { animation-delay: 0.8s; }
+.rotate-letter:nth-child(6) { animation-delay: 1s; }
+.rotate-letter:nth-child(7) { animation-delay: 1.2s; }
+.rotate-letter:nth-child(8) { animation-delay: 1.4s; }
+.rotate-letter:nth-child(9) { animation-delay: 1.6s; }
+
 /* Cyberpunk animations */
 @keyframes scan-line {
   0% { transform: translateX(-100%); }
