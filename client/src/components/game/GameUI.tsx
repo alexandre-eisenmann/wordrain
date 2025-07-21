@@ -18,35 +18,8 @@ export default function GameUI() {
     >
       {/* Floating Stats - No Background Container */}
       <div className="flex justify-between items-start p-4 pointer-events-auto">
-        {/* Left side stats - stacked with left alignment */}
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-col items-start">
-            <span className="text-cyan-300 text-xs font-mono opacity-80">SCORE</span>
-            <div className="w-16 text-left">
-              <span className="text-white text-lg font-bold font-mono">{score}</span>
-            </div>
-          </div>
-          
-          <div className="flex flex-col items-start">
-            <span className="text-green-300 text-xs font-mono opacity-80">WORDS</span>
-            <div className="w-16 text-left">
-              <span className="text-white text-lg font-bold font-mono">{wordsTyped}</span>
-            </div>
-          </div>
-          
-          <div className="flex flex-col items-start">
-            <span className="text-yellow-300 text-xs font-mono opacity-80">ACCURACY</span>
-            <div className="w-16 text-left">
-              <span className="text-white text-lg font-bold font-mono">
-                {accuracy > 0 ? Math.round(accuracy) : 0}%
-              </span>
-            </div>
-          </div>
-        </div>
-        
-        {/* Right side controls */}
-        <div className="flex flex-col gap-3 items-end">
-          {/* Lives indicator */}
+        {/* Left side - Lives indicator */}
+        <div className="flex flex-col gap-3 items-start">
           <div className="flex items-center gap-1">
             {[...Array(5)].map((_, index) => (
               <div
@@ -67,26 +40,49 @@ export default function GameUI() {
               </div>
             ))}
           </div>
+        </div>
+        
+        {/* Right side - Scoreboard and sound toggle */}
+        <div className="flex flex-col gap-1 items-end">
+          <div className="flex flex-col items-end">
+            <span className="text-cyan-300 text-xs font-mono opacity-80">SCORE</span>
+            <div className="w-12 text-right">
+              <span className="text-white text-sm font-bold font-mono">{score}</span>
+            </div>
+          </div>
+          
+          <div className="flex flex-col items-end">
+            <span className="text-green-300 text-xs font-mono opacity-80">WORDS</span>
+            <div className="w-12 text-right">
+              <span className="text-white text-sm font-bold font-mono">{wordsTyped}</span>
+            </div>
+          </div>
+          
+          <div className="flex flex-col items-end">
+            <span className="text-yellow-300 text-xs font-mono opacity-80">ACCURACY</span>
+            <div className="w-12 text-right">
+              <span className="text-white text-sm font-bold font-mono">
+                {accuracy > 0 ? Math.round(accuracy) : 0}%
+              </span>
+            </div>
+          </div>
           
           {/* Sound Control */}
           <button
             onClick={toggleMute}
             onMouseDown={(e) => e.preventDefault()}
             data-allow-click="true"
-            className="relative group p-2 rounded transition-all duration-200 hover:bg-cyan-900/20"
+            className="relative group pt-2 self-end"
             aria-label={isMuted ? "Unmute" : "Mute"}
-            style={{
-              border: "1px solid rgba(0, 255, 255, 0.15)",
-              boxShadow: "0 0 5px rgba(0, 255, 255, 0.1)"
-            }}
+            style={{ lineHeight: 0 }}
           >
             {isMuted ? (
-              <svg className="relative z-10 w-3 h-3 text-red-300 group-hover:text-red-200 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="relative z-10 w-4 h-4 text-red-400/60 group-hover:text-red-300 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
               </svg>
             ) : (
-              <svg className="relative z-10 w-3 h-3 text-cyan-300 group-hover:text-cyan-200 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="relative z-10 w-4 h-4 text-cyan-400/60 group-hover:text-cyan-300 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
               </svg>
             )}
