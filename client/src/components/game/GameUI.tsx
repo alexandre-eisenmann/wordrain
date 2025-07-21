@@ -13,63 +13,49 @@ export default function GameUI() {
 
   return (
     <div 
-      className={`fixed left-0 right-0 pointer-events-none z-40 ${isMobile ? 'top-0' : 'bottom-0'}`} 
-      style={{
-        marginTop: isMobile ? 0 : undefined,
-        marginBottom: isMobile ? undefined : 0,
-        paddingTop: isMobile ? 0 : undefined,
-        paddingBottom: isMobile ? undefined : 0,
-        top: isMobile ? 0 : undefined,
-        bottom: isMobile ? undefined : 0
-      }} 
+      className="fixed left-0 right-0 top-0 pointer-events-none z-40" 
       data-game-ui="true"
     >
       {/* Floating Stats - No Background Container */}
-      <div 
-        className="flex items-center justify-between px-6 py-3 font-mono min-h-[40px] relative z-10 pointer-events-auto"
-        style={{
-          background: 'transparent !important',
-          backgroundColor: 'transparent !important',
-          backgroundImage: 'none !important',
-          backdropFilter: 'none !important',
-          border: 'none !important',
-          boxShadow: 'none !important',
-          outline: 'none !important',
-          fontFamily: "'Space Mono', monospace"
-        }}
-      >
-        {/* Evenly distributed stats across the bar */}
-        <div className="flex items-center justify-between w-full">
-          {/* Score */}
-          <div className="text-xs font-normal text-gray-300" style={{textShadow: '0 0 2px rgba(255, 255, 255, 0.08)'}}>
-            SCORE <span className="text-cyan-300 font-medium w-8 inline-block ml-1" style={{textShadow: '0 0 2px rgba(34, 211, 238, 0.15)'}}>{score}</span>
+      <div className="flex justify-between items-start p-4 pointer-events-auto">
+        {/* Left side stats - stacked with left alignment */}
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-col items-start">
+            <span className="text-cyan-300 text-xs font-mono opacity-80">SCORE</span>
+            <div className="w-16 text-left">
+              <span className="text-white text-lg font-bold font-mono">{score}</span>
+            </div>
           </div>
           
-          {/* Words */}
-          <div className="text-xs font-normal text-gray-300" style={{textShadow: '0 0 2px rgba(255, 255, 255, 0.08)'}}>
-            WORDS <span className="text-white font-medium w-6 inline-block ml-1" style={{textShadow: '0 0 2px rgba(255, 255, 255, 0.1)'}}>{wordsTyped}</span>
+          <div className="flex flex-col items-start">
+            <span className="text-green-300 text-xs font-mono opacity-80">WORDS</span>
+            <div className="w-16 text-left">
+              <span className="text-white text-lg font-bold font-mono">{wordsTyped}</span>
+            </div>
           </div>
           
-          {/* Accuracy */}
-          <div className="text-xs font-normal text-gray-300" style={{textShadow: '0 0 2px rgba(255, 255, 255, 0.08)'}}>
-            ACCURACY <span className="text-white font-medium w-8 inline-block ml-1" style={{textShadow: '0 0 2px rgba(255, 255, 255, 0.1)'}}>{Math.round(accuracy)}%</span>
+          <div className="flex flex-col items-start">
+            <span className="text-yellow-300 text-xs font-mono opacity-80">ACCURACY</span>
+            <div className="w-16 text-left">
+              <span className="text-white text-lg font-bold font-mono">
+                {accuracy > 0 ? Math.round(accuracy) : 0}%
+              </span>
+            </div>
           </div>
-          
-          {/* Lives Tally System */}
+        </div>
+        
+        {/* Right side controls */}
+        <div className="flex flex-col gap-3 items-end">
+          {/* Lives indicator */}
           <div className="flex items-center gap-1">
             {[...Array(5)].map((_, index) => (
               <div
                 key={index}
                 className={`transition-all duration-300 ${
                   index < (5 - missedWords) 
-                    ? 'text-red-400 scale-110' 
-                    : 'text-gray-600 scale-90'
+                    ? 'text-red-400' 
+                    : 'text-gray-600'
                 }`}
-                style={{
-                  filter: index < (5 - missedWords) 
-                    ? 'drop-shadow(0 0 2px rgba(239, 68, 68, 0.2))' 
-                    : 'none'
-                }}
               >
                 <svg 
                   className="w-4 h-4" 

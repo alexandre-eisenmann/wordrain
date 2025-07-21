@@ -9,14 +9,22 @@ import { Howl, Howler } from "howler";
 import "./styles/fonts.css";
 import "@fontsource/inter";
 
+// Extend Window interface for Howler
+declare global {
+  interface Window {
+    Howler: typeof Howler;
+    gameStartTime?: number;
+  }
+}
+
 function App() {
   const { phase, start, restart } = useGame();
   const { setHitSound, setSuccessSound, playHit, playSuccess } = useAudio();
   const [showCanvas, setShowCanvas] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(3); // Start at position 3 (letter 'd')
-  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [audioContextResumed, setAudioContextResumed] = useState(false);
 
-  // Initialize audio
+  // Initialize audio with mobile-specific handling
   useEffect(() => {
     console.log("Initializing audio...");
     
@@ -24,10 +32,17 @@ function App() {
       src: ["/wordrain/sounds/hit.mp3"],
       volume: 0.5,
       preload: true,
+      html5: true, // Use HTML5 Audio for better mobile compatibility
       onload: () => console.log("Hit sound loaded successfully"),
       onloaderror: (id, error) => console.error("Hit sound load error:", error),
       onplay: () => console.log("Hit sound played"),
-      onplayerror: (id, error) => console.error("Hit sound play error:", error),
+      onplayerror: (id, error) => {
+        console.error("Hit sound play error:", error);
+        // Try to resume audio context on play error
+        if (Howler.ctx && Howler.ctx.state === 'suspended') {
+          Howler.ctx.resume();
+        }
+      },
     });
     setHitSound(hitAudio);
 
@@ -35,10 +50,17 @@ function App() {
       src: ["/wordrain/sounds/success.mp3"],
       volume: 0.7,
       preload: true,
+      html5: true, // Use HTML5 Audio for better mobile compatibility
       onload: () => console.log("Success sound loaded successfully"),
       onloaderror: (id, error) => console.error("Success sound load error:", error),
       onplay: () => console.log("Success sound played"),
-      onplayerror: (id, error) => console.error("Success sound play error:", error),
+      onplayerror: (id, error) => {
+        console.error("Success sound play error:", error);
+        // Try to resume audio context on play error
+        if (Howler.ctx && Howler.ctx.state === 'suspended') {
+          Howler.ctx.resume();
+        }
+      },
     });
     setSuccessSound(successAudio);
 
@@ -46,27 +68,85 @@ function App() {
     setShowCanvas(true);
   }, [setHitSound, setSuccessSound]);
 
-  // Global click handler to unlock audio
+  // Enhanced audio unlocking for mobile devices
   useEffect(() => {
-    const unlockAudio = () => {
-      if (!audioUnlocked) {
-        Howler.ctx.resume();
-        setAudioUnlocked(true);
-        console.log("Audio unlocked on user interaction");
+    const unlockAudio = async () => {
+      try {
+        // Resume Howler audio context
+        if (Howler.ctx && Howler.ctx.state === 'suspended') {
+          await Howler.ctx.resume();
+          console.log("Audio context resumed");
+          setAudioContextResumed(true);
+        }
+
+        // Set Howler to unmuted state
+        Howler.mute(false);
+        
+        // Test play a silent sound to unlock audio
+        const testSound = new Howl({
+          src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT'],
+          volume: 0,
+          html5: true,
+        });
+        
+        testSound.play();
+        testSound.once('play', () => {
+          testSound.unload();
+          console.log("Audio unlocked successfully");
+          // setAudioUnlocked(true); // This line is removed
+        });
+        
+      } catch (error) {
+        console.error("Audio unlock failed:", error);
       }
     };
 
-    // Add event listeners for user interaction
-    document.addEventListener('click', unlockAudio);
-    document.addEventListener('keydown', unlockAudio);
-    document.addEventListener('touchstart', unlockAudio);
+    // More comprehensive event listeners for mobile
+    const events = [
+      'click', 'touchstart', 'touchend', 'touchmove',
+      'keydown', 'keyup', 'mousedown', 'mouseup',
+      'scroll', 'focus', 'blur'
+    ];
+
+    events.forEach(event => {
+      document.addEventListener(event, unlockAudio, { passive: true, once: false });
+    });
+
+    // Also try to unlock on window focus
+    window.addEventListener('focus', unlockAudio);
 
     return () => {
-      document.removeEventListener('click', unlockAudio);
-      document.removeEventListener('keydown', unlockAudio);
-      document.removeEventListener('touchstart', unlockAudio);
+      events.forEach(event => {
+        document.removeEventListener(event, unlockAudio);
+      });
+      window.removeEventListener('focus', unlockAudio);
     };
-  }, [audioUnlocked]);
+  }, []);
+
+  // Additional mobile-specific audio handling
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && Howler.ctx && Howler.ctx.state === 'suspended') {
+        Howler.ctx.resume();
+        console.log("Audio context resumed on visibility change");
+      }
+    };
+
+    const handlePageShow = () => {
+      if (Howler.ctx && Howler.ctx.state === 'suspended') {
+        Howler.ctx.resume();
+        console.log("Audio context resumed on page show");
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pageshow', handlePageShow);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, []);
 
   // Disable unwanted mouse events globally
   useEffect(() => {
@@ -209,6 +289,7 @@ function App() {
                 <p className="text-xl text-cyan-100 mb-8 font-light">
                   Type fast. Think faster. Don't miss 5 words.
                 </p>
+                
                 <button
                   onClick={handleStartGame}
                   data-allow-click="true"

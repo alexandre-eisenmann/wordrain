@@ -50,10 +50,31 @@ export const useAudio = create<AudioState>((set, get) => ({
     
     if (hitSound && !isMuted) {
       try {
-        const soundId = hitSound.play();
-        console.log("Hit sound played with ID:", soundId);
+        // Ensure audio context is resumed for mobile
+        if (Howler.ctx && Howler.ctx.state === 'suspended') {
+          Howler.ctx.resume().then(() => {
+            const soundId = hitSound.play();
+            console.log("Hit sound played with ID:", soundId);
+          }).catch((error) => {
+            console.error("Failed to resume audio context for hit sound:", error);
+          });
+        } else {
+          const soundId = hitSound.play();
+          console.log("Hit sound played with ID:", soundId);
+        }
       } catch (error) {
         console.error("Hit sound play failed:", error);
+        // Try to resume audio context and retry
+        if (Howler.ctx && Howler.ctx.state === 'suspended') {
+          Howler.ctx.resume().then(() => {
+            try {
+              const soundId = hitSound.play();
+              console.log("Hit sound played with ID (retry):", soundId);
+            } catch (retryError) {
+              console.error("Hit sound retry failed:", retryError);
+            }
+          });
+        }
       }
     } else if (isMuted) {
       console.log("Hit sound skipped (muted)");
@@ -68,10 +89,31 @@ export const useAudio = create<AudioState>((set, get) => ({
     
     if (successSound && !isMuted) {
       try {
-        const soundId = successSound.play();
-        console.log("Success sound played with ID:", soundId);
+        // Ensure audio context is resumed for mobile
+        if (Howler.ctx && Howler.ctx.state === 'suspended') {
+          Howler.ctx.resume().then(() => {
+            const soundId = successSound.play();
+            console.log("Success sound played with ID:", soundId);
+          }).catch((error) => {
+            console.error("Failed to resume audio context for success sound:", error);
+          });
+        } else {
+          const soundId = successSound.play();
+          console.log("Success sound played with ID:", soundId);
+        }
       } catch (error) {
         console.error("Success sound play failed:", error);
+        // Try to resume audio context and retry
+        if (Howler.ctx && Howler.ctx.state === 'suspended') {
+          Howler.ctx.resume().then(() => {
+            try {
+              const soundId = successSound.play();
+              console.log("Success sound played with ID (retry):", soundId);
+            } catch (retryError) {
+              console.error("Success sound retry failed:", retryError);
+            }
+          });
+        }
       }
     } else if (isMuted) {
       console.log("Success sound skipped (muted)");

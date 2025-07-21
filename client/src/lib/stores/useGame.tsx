@@ -17,29 +17,19 @@ export const useGame = create<GameState>()(
     phase: "ready",
     
     start: () => {
-      set((state) => {
-        // Transition from ready or ended to playing
-        if (state.phase === "ready" || state.phase === "ended") {
-          console.log("Game started");
-          return { phase: "playing" };
-        }
-        return {};
-      });
+      // Set game start time for WPM calculation
+      (window as any).gameStartTime = Date.now();
+      set({ phase: "playing" });
     },
     
     restart: () => {
-      console.log("Game restarted");
-      set(() => ({ phase: "ready" }));
+      // Reset game start time for WPM calculation
+      (window as any).gameStartTime = Date.now();
+      set({ phase: "playing" });
     },
     
     end: () => {
-      set((state) => {
-        // Only transition from playing to ended
-        if (state.phase === "playing") {
-          return { phase: "ended" };
-        }
-        return {};
-      });
+      set({ phase: "ended" });
     }
   }))
 );
