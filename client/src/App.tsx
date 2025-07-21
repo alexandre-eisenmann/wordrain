@@ -169,10 +169,17 @@ function App() {
       const isTypingInput = isMobile && target.closest('input') !== null;
       
       if (!isButton && !isTitleArea && !isGameUI && !isTypingInput) {
-        // Instead of preventing, just stop propagation to allow natural interactions
+        // Allow the event but prevent default to maintain natural interactions
+        e.preventDefault();
         e.stopPropagation();
         return false;
       }
+    };
+
+    // Allow all touch events for pull-to-refresh and natural mobile interactions
+    const handleTouchEvents = (e: TouchEvent) => {
+      // Allow all touch events to pass through for natural mobile behavior
+      return true;
     };
 
     // Allow drag events but prevent unwanted actions
@@ -200,11 +207,24 @@ function App() {
     document.addEventListener('mousedown', preventUnwantedMouseEvents, { capture: true });
     document.addEventListener('dragstart', handleDrag, { capture: true });
     document.addEventListener('contextmenu', preventContextMenu, { capture: true });
+    
+    // Add touch event listeners for mobile
+    if (isMobile) {
+      document.addEventListener('touchstart', handleTouchEvents, { passive: true });
+      document.addEventListener('touchmove', handleTouchEvents, { passive: true });
+      document.addEventListener('touchend', handleTouchEvents, { passive: true });
+    }
 
     return () => {
       document.removeEventListener('mousedown', preventUnwantedMouseEvents, { capture: true });
       document.removeEventListener('dragstart', handleDrag, { capture: true });
       document.removeEventListener('contextmenu', preventContextMenu, { capture: true });
+      
+      if (isMobile) {
+        document.removeEventListener('touchstart', handleTouchEvents);
+        document.removeEventListener('touchmove', handleTouchEvents);
+        document.removeEventListener('touchend', handleTouchEvents);
+      }
     };
   }, [phase, isMobile]);
 
@@ -230,7 +250,7 @@ function App() {
   };
 
   return (
-    <div className="relative w-full h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-black overflow-hidden" style={{paddingBottom: 0, marginBottom: 0, height: 'calc(100vh + 20px)', minHeight: '100vh', bottom: 0}}>
+    <div className="relative w-full bg-gradient-to-b from-gray-900 via-purple-900 to-black overflow-hidden" style={{ height: '100dvh' }}>
       {showCanvas && (
         <>
           {/* Cyberpunk Background */}
