@@ -70,7 +70,19 @@ export default function TypingInput() {
     <input
       ref={inputRef}
       type="text"
-      className="absolute -bottom-20 left-1/2 transform -translate-x-1/2 w-1 h-1 opacity-0 pointer-events-none"
+      className="absolute opacity-0 pointer-events-none"
+      style={{
+        position: 'absolute',
+        left: '-9999px',
+        top: '-9999px',
+        width: '1px',
+        height: '1px',
+        opacity: 0,
+        pointerEvents: 'none',
+        background: 'transparent',
+        border: 'none',
+        outline: 'none'
+      }}
       onKeyDown={handleKeyDown}
       autoComplete="off"
       spellCheck={false}

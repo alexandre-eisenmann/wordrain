@@ -52,6 +52,16 @@ h1, h2, h3, p, div, span {
   -ms-user-select: none;
 }
 
+/* Force transparency for game UI */
+[data-game-ui] > div {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 /* Cyberpunk animations */
 @keyframes scan-line {
   0% { transform: translateX(-100%); }
