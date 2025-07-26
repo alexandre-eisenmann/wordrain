@@ -49,6 +49,58 @@ interface WordRainState {
   reset: () => void;
 }
 
+// Utility function to wrap text at word boundaries
+const wrapText = (text: string, maxWidth: number, fontSize: number, fontFamily: string): string[] => {
+  // Create a temporary canvas to measure text accurately
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  
+  if (!ctx) {
+    // Fallback: simple word-based wrapping
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+    
+    for (const word of words) {
+      const testLine = currentLine + (currentLine ? ' ' : '') + word;
+      if (testLine.length * fontSize * 0.6 > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+    return lines;
+  }
+  
+  // Set font and measure text
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+  
+  for (const word of words) {
+    const testLine = currentLine + (currentLine ? ' ' : '') + word;
+    const metrics = ctx.measureText(testLine);
+    
+    if (metrics.width > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  }
+  
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  
+  return lines;
+};
+
 // Utility function to calculate word bounds
 const calculateWordBounds = (text: string, fontSize: number, fontFamily: string, rotation: number): { width: number; height: number; maxWidth: number } => {
   // Create a temporary canvas to measure text accurately
@@ -68,17 +120,42 @@ const calculateWordBounds = (text: string, fontSize: number, fontFamily: string,
     return { width: wordWidth, height: wordHeight, maxWidth: Math.max(wordWidth, maxWidth) };
   }
   
-  // Set font and measure text
-  ctx.font = `${fontSize}px ${fontFamily}`;
-  const metrics = ctx.measureText(text);
-  const wordWidth = metrics.width;
-  const wordHeight = fontSize;
+  // Determine if this is a long phrase that needs wrapping
+  // Lowered thresholds for easier testing - can be adjusted back later
+  const isLongPhrase = text.length > 15 || text.includes(' ') && text.length > 12;
+  const maxLineWidth = isLongPhrase ? Math.min(window.innerWidth * 0.8, 400) : undefined;
   
-  // For rotating words, calculate the maximum width when horizontal
-  const maxWidth = Math.abs(wordWidth * Math.cos(rotation * Math.PI / 180)) + 
-                  Math.abs(wordHeight * Math.sin(rotation * Math.PI / 180));
-  
-  return { width: wordWidth, height: wordHeight, maxWidth: Math.max(wordWidth, maxWidth) };
+  if (isLongPhrase && maxLineWidth) {
+    // Calculate bounds for wrapped text
+    const lines = wrapText(text, maxLineWidth, fontSize, fontFamily);
+    const lineHeight = fontSize * 1.2;
+    const totalHeight = lines.length * lineHeight;
+    
+    // Find the widest line
+    let widestLineWidth = 0;
+    for (const line of lines) {
+      const metrics = ctx.measureText(line);
+      widestLineWidth = Math.max(widestLineWidth, metrics.width);
+    }
+    
+    // For rotating words, calculate the maximum width when horizontal
+    const maxWidth = Math.abs(widestLineWidth * Math.cos(rotation * Math.PI / 180)) + 
+                    Math.abs(totalHeight * Math.sin(rotation * Math.PI / 180));
+    
+    return { width: widestLineWidth, height: totalHeight, maxWidth: Math.max(widestLineWidth, maxWidth) };
+  } else {
+    // Original calculation for single-line text
+    ctx.font = `${fontSize}px ${fontFamily}`;
+    const metrics = ctx.measureText(text);
+    const wordWidth = metrics.width;
+    const wordHeight = fontSize;
+    
+    // For rotating words, calculate the maximum width when horizontal
+    const maxWidth = Math.abs(wordWidth * Math.cos(rotation * Math.PI / 180)) + 
+                    Math.abs(wordHeight * Math.sin(rotation * Math.PI / 180));
+    
+    return { width: wordWidth, height: wordHeight, maxWidth: Math.max(wordWidth, maxWidth) };
+  }
 };
 
 // Utility function to get a valid spawn position
@@ -229,19 +306,42 @@ export const useWordRain = create<WordRainState>((set, get) => ({
           // Word completed - create explosion effect
           completed = true;
           
-          // Create exploding letters for each character
-          const explosionLetters = word.text.split("").map((char, index) => ({
-            id: `explosion-${word.id}-${Date.now()}-${index}`,
-            char,
-            x: word.x + (index * word.fontSize * 0.6),
-            y: word.y,
-            vx: (Math.random() - 0.5) * 3000, // Higher horizontal velocity range
-            vy: (Math.random() - 0.5) * 3000, // Higher vertical velocity range with upward bias
-            fontSize: word.fontSize,
-            fontFamily: word.fontFamily,
-            rotation: (Math.random() - 0.5) * 7200, // Much more rotation for spinning effect
-            duration: Math.random() * 4 + 2, // Random duration between 2-6 seconds
-          }));
+          // Determine if this is a long phrase that needs wrapping
+          // Lowered thresholds for easier testing - can be adjusted back later
+          const isLongPhrase = word.text.length > 15 || word.text.includes(' ') && word.text.length > 12;
+          const maxLineWidth = isLongPhrase ? Math.min(window.innerWidth * 0.8, 400) : undefined;
+          
+          // Get wrapped lines if needed
+          const lines = isLongPhrase && maxLineWidth 
+            ? wrapText(word.text, maxLineWidth, word.fontSize, word.fontFamily)
+            : [word.text];
+          
+          // Create exploding letters for each character, accounting for line breaks
+          const explosionLetters: ExplodingLetter[] = [];
+          const lineHeight = word.fontSize * 1.2;
+          
+          // Calculate word size factor for proportional blast effect
+          const wordSizeFactor = word.text.length
+          
+          lines.forEach((line, lineIndex) => {
+            line.split("").forEach((char, charIndex) => {
+              const globalIndex = lineIndex === 0 ? charIndex : 
+                lines.slice(0, lineIndex).join('').length + charIndex + lineIndex; // Account for spaces between lines
+              
+              explosionLetters.push({
+                id: `explosion-${word.id}-${Date.now()}-${globalIndex}`,
+                char,
+                x: word.x + (charIndex * word.fontSize * 0.6),
+                y: word.y + (lineIndex * lineHeight),
+                vx: (Math.random() - 0.5) * 500 * wordSizeFactor, // Proportional horizontal velocity
+                vy: (Math.random() - 0.5) * 500 * wordSizeFactor, // Proportional vertical velocity
+                fontSize: word.fontSize,
+                fontFamily: word.fontFamily,
+                rotation: (Math.random() - 0.5) * 1200 * wordSizeFactor, // Proportional rotation for spinning effect
+                duration: Math.random() * 4 + 2, // Keep duration consistent for visual coherence
+              });
+            });
+          });
           
           newExplodingLetters.push(...explosionLetters);
           

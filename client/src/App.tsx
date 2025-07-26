@@ -117,11 +117,22 @@ function App() {
     // Also try to unlock on window focus
     window.addEventListener('focus', unlockAudio);
 
+    // Periodic audio context check to keep it active
+    const audioCheckInterval = setInterval(() => {
+      if (Howler.ctx && Howler.ctx.state === 'suspended') {
+        console.log("Audio context suspended, attempting to resume...");
+        Howler.ctx.resume().catch(error => {
+          console.error("Failed to resume audio context during periodic check:", error);
+        });
+      }
+    }, 5000); // Check every 5 seconds
+
     return () => {
       events.forEach(event => {
         document.removeEventListener(event, unlockAudio);
       });
       window.removeEventListener('focus', unlockAudio);
+      clearInterval(audioCheckInterval);
     };
   }, []);
 

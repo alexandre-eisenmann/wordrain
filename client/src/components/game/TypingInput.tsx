@@ -74,23 +74,23 @@ export default function TypingInput() {
     };
   }, [isMobile]);
 
-  const handleKeyDown = (event: React.KeyboardEvent) => {
+  const handleKeyDown = async (event: React.KeyboardEvent) => {
     if (phase !== "playing") return;
     let key = event.key;
     // Handle space key specifically
     if (event.code === "Space") {
       event.preventDefault();
       const result = typeKey(" ");
-      if (result.hit) playHit();
-      if (result.completed) playSuccess();
+      if (result.hit) await playHit();
+      if (result.completed) await playSuccess();
       return;
     }
     key = key.toLowerCase();
     if (/^[a-z0-9.,!?'-]$/.test(key)) {
       event.preventDefault();
       const result = typeKey(key);
-      if (result.hit) playHit();
-      if (result.completed) playSuccess();
+      if (result.hit) await playHit();
+      if (result.completed) await playSuccess();
     }
   };
 

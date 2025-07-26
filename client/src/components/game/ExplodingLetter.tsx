@@ -8,6 +8,8 @@ interface ExplodingLetterProps {
 export default function ExplodingLetter({ letter }: ExplodingLetterProps) {
   const { char, x, y, vx, vy, fontSize, fontFamily, rotation, duration } = letter;
   
+  // Calculate size factor for proportional visual effects
+  const sizeFactor = Math.max(0.2, Math.min(2.5, fontSize / 40));
 
   return (
     <motion.div
@@ -15,7 +17,7 @@ export default function ExplodingLetter({ letter }: ExplodingLetterProps) {
       style={{
         fontSize: `${fontSize}px`,
         fontFamily: fontFamily,
-        textShadow: "2px 2px 4px rgba(0,0,0,0.5)",
+        textShadow: `${2 * sizeFactor}px ${2 * sizeFactor}px ${4 * sizeFactor}px rgba(0,0,0,0.5)`,
       }}
       initial={{ 
         opacity: 1, 
@@ -26,7 +28,7 @@ export default function ExplodingLetter({ letter }: ExplodingLetterProps) {
       }}
       animate={{ 
         opacity: 0, 
-        scale: 0.3,
+        scale: 0.3 * sizeFactor, // Proportional scale animation
         rotate: rotation,
         x: x + vx,
         y: y + vy
