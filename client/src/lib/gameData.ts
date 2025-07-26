@@ -41,9 +41,9 @@ const WORD_LISTS = {
   combined: ALL_WORDS
 };
 
-// Font families for cyberpunk typography
+// Font families for modern typography
 const FONT_FAMILIES = [
-  // Monospace fonts (primary for cyberpunk aesthetic)
+  // Monospace fonts (primary for modern aesthetic)
   '"Courier New", monospace',
   'Monaco, monospace',
   '"Fira Code", monospace',

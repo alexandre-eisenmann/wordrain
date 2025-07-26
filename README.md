@@ -1,11 +1,11 @@
-# WordRain - Cyberpunk Typing Game
+# WordRain - Fast-Paced Typing Game
 
-A cyberpunk-themed typing game built with React, TypeScript, and Three.js where players intercept falling data streams before they breach the system.
+A fast-paced typing game built with React, TypeScript, and Three.js where players intercept falling words before they escape.
 
 ## Features
 
 - 🎮 **Dynamic Typing Gameplay**: Type falling words before they reach the bottom
-- 🎨 **Cyberpunk Aesthetic**: Neon colors, grid backgrounds, and futuristic UI
+- 🎨 **Modern Aesthetic**: Dynamic colors, grid backgrounds, and sleek UI
 - 🔊 **Audio Effects**: Background music and sound effects for hits and completions
 - 🎯 **Progressive Difficulty**: Speed and complexity increase as you progress
 - 📊 **Performance Tracking**: Real-time accuracy and words per minute metrics

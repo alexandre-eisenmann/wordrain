@@ -86,7 +86,7 @@ h1, h2, h3, p, div, span {
 .rotate-letter:nth-child(8) { animation-delay: 1.4s; }
 .rotate-letter:nth-child(9) { animation-delay: 1.6s; }
 
-/* Cyberpunk animations */
+/* Modern animations */
 @keyframes scan-line {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
