@@ -49,6 +49,57 @@ interface WordRainState {
   reset: () => void;
 }
 
+// Utility function to calculate word bounds
+const calculateWordBounds = (text: string, fontSize: number, fontFamily: string, rotation: number): { width: number; height: number; maxWidth: number } => {
+  // Create a temporary canvas to measure text accurately
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  
+  if (!ctx) {
+    // Fallback calculation if canvas is not available
+    const charWidth = fontSize * 0.6; // Approximate character width
+    const wordWidth = text.length * charWidth;
+    const wordHeight = fontSize;
+    
+    // For rotating words, calculate the maximum width when horizontal
+    const maxWidth = Math.abs(wordWidth * Math.cos(rotation * Math.PI / 180)) + 
+                    Math.abs(wordHeight * Math.sin(rotation * Math.PI / 180));
+    
+    return { width: wordWidth, height: wordHeight, maxWidth: Math.max(wordWidth, maxWidth) };
+  }
+  
+  // Set font and measure text
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  const metrics = ctx.measureText(text);
+  const wordWidth = metrics.width;
+  const wordHeight = fontSize;
+  
+  // For rotating words, calculate the maximum width when horizontal
+  const maxWidth = Math.abs(wordWidth * Math.cos(rotation * Math.PI / 180)) + 
+                  Math.abs(wordHeight * Math.sin(rotation * Math.PI / 180));
+  
+  return { width: wordWidth, height: wordHeight, maxWidth: Math.max(wordWidth, maxWidth) };
+};
+
+// Utility function to get a valid spawn position
+const getValidSpawnPosition = (word: string, fontSize: number, fontFamily: string, rotation: number): number => {
+  const bounds = calculateWordBounds(word, fontSize, fontFamily, rotation);
+  const maxWordWidth = bounds.maxWidth;
+  const viewportWidth = window.innerWidth;
+  
+  // Ensure the word fits within the viewport with some padding
+  const padding = 20; // Minimum padding from edges
+  const maxX = viewportWidth - maxWordWidth - padding;
+  
+  // If the word is too wide for the viewport, center it
+  if (maxX < padding) {
+    return (viewportWidth - maxWordWidth) / 2;
+  }
+  
+  // Return a random position that ensures the word fits
+  return Math.random() * maxX + padding;
+};
+
 export const useWordRain = create<WordRainState>((set, get) => ({
   words: [],
   explodingLetters: [],
@@ -78,19 +129,25 @@ export const useWordRain = create<WordRainState>((set, get) => ({
     const rotation = shouldRotate ? (Math.random() - 0.5) * baseRotation : 0; // Random rotation within the difficulty-based range
     const rotationDirection = shouldRotate ? (Math.random() < 0.5 ? 1 : -1) : 0; // Random direction: 50% clockwise, 50% counterclockwise
     
+    // Get font family first
+    const fontFamily = getFontFamily();
+    
     // Calculate random rotation center within the word bounds
     const estimatedWordWidth = word.length * fontSize * 0.6; // Approximate word width
     const rotationCenterX = shouldRotate ? Math.random() * estimatedWordWidth : 0; // Random point within word width
     const rotationCenterY = shouldRotate ? Math.random() * fontSize : 0; // Random point within word height
     
+    // Get a valid spawn position that ensures the word fits within the viewport
+    const validX = getValidSpawnPosition(word, fontSize, fontFamily, rotation);
+    
     const newWord: Word = {
       id: Math.random().toString(36).substr(2, 9),
       text: word,
-      x: Math.random() * (window.innerWidth - 300),
+      x: validX,
       y: -50,
       speed,
       fontSize,
-      fontFamily: getFontFamily(),
+      fontFamily: fontFamily,
       cursorPosition: 0,
       completed: false,
       missed: false,
