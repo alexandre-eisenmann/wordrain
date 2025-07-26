@@ -5,7 +5,7 @@ import { useIsMobile } from "../../hooks/use-is-mobile";
 
 export default function GameUI() {
   const { phase } = useGame();
-  const { score, wordsTyped, accuracy, missedWords } = useWordRain();
+  const { score, wordsTyped, accuracy, missedWords, testMode } = useWordRain();
   const { toggleMute, isMuted } = useAudio();
   const isMobile = useIsMobile();
 
@@ -18,7 +18,7 @@ export default function GameUI() {
     >
       {/* Floating Stats - No Background Container */}
       <div className="flex justify-between items-start p-4 pointer-events-auto">
-        {/* Left side - Lives indicator */}
+        {/* Left side - Lives indicator and test mode */}
         <div className="flex flex-col gap-3 items-start">
           <div className="flex items-center gap-1">
             {[...Array(5)].map((_, index) => (
@@ -40,6 +40,16 @@ export default function GameUI() {
               </div>
             ))}
           </div>
+          
+          {/* Test Mode Indicator - moved under hearts */}
+          {testMode && (
+            <div className="pointer-events-auto">
+              <div className="bg-yellow-500 text-black px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+                <span>🧪</span>
+                <span>TEST MODE</span>
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Right side - Scoreboard and sound toggle */}

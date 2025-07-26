@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAudio } from "./lib/stores/useAudio";
 import { useGame } from "./lib/stores/useGame";
+import { useWordRain } from "./lib/stores/useWordRain";
 import WordRainCanvas from "./components/game/WordRainCanvas";
 import GameUI from "./components/game/GameUI";
 import TypingInput from "./components/game/TypingInput";
@@ -18,13 +19,41 @@ declare global {
   }
 }
 
+// Function to get URL parameters
+const getUrlParams = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const test = urlParams.get('test') === 'true' || urlParams.get('test') === '1';
+  console.log("🔍 URL params:", {
+    search: window.location.search,
+    testParam: urlParams.get('test'),
+    test: test
+  });
+  return { test };
+};
+
 function App() {
   const { phase, start, restart } = useGame();
   const { setHitSound, setSuccessSound, playHit, playSuccess } = useAudio();
+  const { setTestMode, score, wordsTyped, accuracy } = useWordRain();
   const [showCanvas, setShowCanvas] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(3); // Start at position 3 (letter 'd')
   const [audioContextResumed, setAudioContextResumed] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Get test mode from URL parameters
+  const { test } = getUrlParams();
+  
+  // Log test mode status and set it in the store
+  useEffect(() => {
+    console.log("🔍 App component - test mode detected:", test);
+    if (test) {
+      console.log("🧪 Test mode enabled - using long phrases only");
+      setTestMode(true);
+    } else {
+      console.log("🔍 Normal mode - using mixed word types");
+      setTestMode(false);
+    }
+  }, [test, setTestMode]);
 
   // Initialize audio with mobile-specific handling
   useEffect(() => {
@@ -315,6 +344,17 @@ function App() {
                   </span>
                 ))}
               </h1>
+              
+              {/* Test Mode Indicator */}
+              {test && (
+                <div className="mb-6">
+                  <div className="bg-yellow-500 text-black px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2">
+                    <span>🧪</span>
+                    <span>TEST MODE - LONG PHRASES ONLY</span>
+                  </div>
+                </div>
+              )}
+              
               <p className="text-xl text-cyan-100 mb-8 font-light">
                 Type fast. Think faster. Don't miss 5 words.
               </p>
@@ -331,8 +371,8 @@ function App() {
               </button>
             </div>
           )}
-          
-          {/* Game Over Overlay - Non-blocking */}
+
+          {/* Game Over Screen */}
           {phase === "ended" && (
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center">
               <h2 className="text-3xl font-bold text-red-400 mb-3 tracking-wider" style={{ fontFamily: "'Fira Code', 'Courier New', monospace" }}>

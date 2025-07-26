@@ -41,12 +41,14 @@ interface WordRainState {
   correctKeystrokes: number;
   accuracy: number;
   missedWords: number;
+  testMode: boolean;
   
   // Actions
   spawnWord: () => void;
   updateGame: () => void;
   typeKey: (key: string) => { hit: boolean; completed: boolean };
   reset: () => void;
+  setTestMode: (testMode: boolean) => void;
 }
 
 // Utility function to wrap text at word boundaries
@@ -98,7 +100,30 @@ const wrapText = (text: string, maxWidth: number, fontSize: number, fontFamily: 
     lines.push(currentLine);
   }
   
-  return lines;
+  // If we still have lines that are too wide, force break them
+  const finalLines: string[] = [];
+  for (const line of lines) {
+    if (ctx.measureText(line).width > maxWidth) {
+      // Force break long lines
+      let currentChar = '';
+      for (const char of line) {
+        const testChar = currentChar + char;
+        if (ctx.measureText(testChar).width > maxWidth && currentChar) {
+          finalLines.push(currentChar);
+          currentChar = char;
+        } else {
+          currentChar = testChar;
+        }
+      }
+      if (currentChar) {
+        finalLines.push(currentChar);
+      }
+    } else {
+      finalLines.push(line);
+    }
+  }
+  
+  return finalLines;
 };
 
 // Utility function to calculate word bounds
@@ -121,9 +146,9 @@ const calculateWordBounds = (text: string, fontSize: number, fontFamily: string,
   }
   
   // Determine if this is a long phrase that needs wrapping
-  // Lowered thresholds for easier testing - can be adjusted back later
+  // More aggressive wrapping for test mode phrases
   const isLongPhrase = text.length > 15 || text.includes(' ') && text.length > 12;
-  const maxLineWidth = isLongPhrase ? Math.min(window.innerWidth * 0.8, 400) : undefined;
+  const maxLineWidth = isLongPhrase ? Math.min(window.innerWidth * 0.7, 600) : undefined; // Increased from 0.8 to 0.7 and 400 to 600
   
   if (isLongPhrase && maxLineWidth) {
     // Calculate bounds for wrapped text
@@ -134,6 +159,7 @@ const calculateWordBounds = (text: string, fontSize: number, fontFamily: string,
     // Find the widest line
     let widestLineWidth = 0;
     for (const line of lines) {
+      ctx.font = `${fontSize}px ${fontFamily}`;
       const metrics = ctx.measureText(line);
       widestLineWidth = Math.max(widestLineWidth, metrics.width);
     }
@@ -164,17 +190,21 @@ const getValidSpawnPosition = (word: string, fontSize: number, fontFamily: strin
   const maxWordWidth = bounds.maxWidth;
   const viewportWidth = window.innerWidth;
   
-  // Ensure the word fits within the viewport with some padding
-  const padding = 20; // Minimum padding from edges
-  const maxX = viewportWidth - maxWordWidth - padding;
+  // Ensure the word fits within the viewport with more padding for long phrases
+  const isLongPhrase = word.length > 15 || word.includes(' ') && word.length > 12;
+  const padding = isLongPhrase ? 40 : 20; // More padding for long phrases
+  
+  // Calculate the available space for positioning
+  const availableSpace = viewportWidth - maxWordWidth - (padding * 2);
   
   // If the word is too wide for the viewport, center it
-  if (maxX < padding) {
+  if (availableSpace < 0) {
+    console.log("⚠️ Word too wide for viewport, centering:", word, "width:", maxWordWidth, "viewport:", viewportWidth);
     return (viewportWidth - maxWordWidth) / 2;
   }
   
-  // Return a random position that ensures the word fits
-  return Math.random() * maxX + padding;
+  // Return a random position that ensures the word fits, with balanced distribution
+  return padding + (Math.random() * availableSpace);
 };
 
 export const useWordRain = create<WordRainState>((set, get) => ({
@@ -186,10 +216,13 @@ export const useWordRain = create<WordRainState>((set, get) => ({
   correctKeystrokes: 0,
   accuracy: 100,
   missedWords: 0,
+  testMode: false,
 
   spawnWord: () => {
     const state = get();
-    const word = getRandomWord(state.wordsTyped);
+    console.log("🧪 Spawning word with testMode:", state.testMode, "wordsTyped:", state.wordsTyped);
+    const word = getRandomWord(state.wordsTyped, state.testMode);
+    console.log("🧪 Final spawned word:", word, "length:", word.length, "has spaces:", word.includes(' '));
     const fontSize = Math.random() * 80 + 20; // 20-100px for much more variety
     
     // Increase speed based on score/difficulty
@@ -209,13 +242,13 @@ export const useWordRain = create<WordRainState>((set, get) => ({
     // Get font family first
     const fontFamily = getFontFamily();
     
-    // Calculate random rotation center within the word bounds
-    const estimatedWordWidth = word.length * fontSize * 0.6; // Approximate word width
-    const rotationCenterX = shouldRotate ? Math.random() * estimatedWordWidth : 0; // Random point within word width
-    const rotationCenterY = shouldRotate ? Math.random() * fontSize : 0; // Random point within word height
-    
     // Get a valid spawn position that ensures the word fits within the viewport
     const validX = getValidSpawnPosition(word, fontSize, fontFamily, rotation);
+    
+    // Calculate rotation center within the actual bounding box
+    const bounds = calculateWordBounds(word, fontSize, fontFamily, rotation);
+    const rotationCenterX = shouldRotate ? Math.random() * bounds.width : 0; // Use actual width
+    const rotationCenterY = shouldRotate ? Math.random() * bounds.height : 0; // Use actual height
     
     const newWord: Word = {
       id: Math.random().toString(36).substr(2, 9),
@@ -375,6 +408,7 @@ export const useWordRain = create<WordRainState>((set, get) => ({
   },
 
   reset: () => {
+    const currentState = get();
     set({
       words: [],
       explodingLetters: [],
@@ -384,7 +418,13 @@ export const useWordRain = create<WordRainState>((set, get) => ({
       correctKeystrokes: 0,
       accuracy: 100,
       missedWords: 0,
+      testMode: currentState.testMode, // Preserve test mode state
     });
+  },
+
+  setTestMode: (testMode: boolean) => {
+    console.log("🧪 Setting test mode:", testMode);
+    set({ testMode });
   },
 }));
 

@@ -502,7 +502,15 @@ const FONT_FAMILIES = [
 ];
 
 // Get a random word with distribution-based progressive difficulty
-export function getRandomWord(wordsTyped: number = 0): string {
+export function getRandomWord(wordsTyped: number = 0, testMode: boolean = false): string {
+  // If test mode is enabled, only use long phrases
+  if (testMode) {
+    console.log("🧪 Test mode active - using long phrases only");
+    const longPhrase = getRandomLongPhrase(wordsTyped);
+    console.log("🧪 Selected long phrase:", longPhrase);
+    return longPhrase;
+  }
+  
   // Calculate difficulty level based on words typed
   const difficultyLevel = Math.floor(wordsTyped / 10);
   
@@ -632,7 +640,10 @@ export function getRandomPhrase(wordsTyped: number = 0): string {
 
 // Get a random long phrase specifically
 export function getRandomLongPhrase(wordsTyped: number = 0): string {
-  return WORD_LISTS.longPhrases[Math.floor(Math.random() * WORD_LISTS.longPhrases.length)];
+  console.log("🧪 getRandomLongPhrase called - available phrases:", WORD_LISTS.longPhrases.length);
+  const selectedPhrase = WORD_LISTS.longPhrases[Math.floor(Math.random() * WORD_LISTS.longPhrases.length)];
+  console.log("🧪 Selected long phrase:", selectedPhrase);
+  return selectedPhrase;
 }
 
 // Get a random font family
