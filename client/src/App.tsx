@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { Routes, Route, useNavigate, useLocation, useParams } from "react-router-dom";
 import { useAudio } from "./lib/stores/useAudio";
 import { useGame } from "./lib/stores/useGame";
 import { useWordRain } from "./lib/stores/useWordRain";
+import { useVariation } from "./lib/stores/useVariation";
 import WordRainCanvas from "./components/game/WordRainCanvas";
 import GameUI from "./components/game/GameUI";
 import TypingInput from "./components/game/TypingInput";
@@ -31,14 +33,24 @@ const getUrlParams = () => {
   return { test };
 };
 
-function App() {
+function GameComponent() {
+  const { variationId } = useParams();
   const { phase, start, restart } = useGame();
   const { setHitSound, setSuccessSound, playHit, playSuccess } = useAudio();
   const { setTestMode, score, wordsTyped, accuracy } = useWordRain();
+  const { getCurrentVariation, setVariation } = useVariation();
+  const { getAvailableVariations } = useVariation();
   const [showCanvas, setShowCanvas] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(3); // Start at position 3 (letter 'd')
   const [audioContextResumed, setAudioContextResumed] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Initialize variation from URL parameter
+  useEffect(() => {
+    if (variationId) {
+      setVariation(variationId);
+    }
+  }, [variationId, setVariation]);
   
   // Get test mode from URL parameters
   const { test } = getUrlParams();
@@ -289,6 +301,8 @@ function App() {
     setCursorPosition(3); // Reset to position 3 (letter 'd')
   };
 
+  const currentVariation = getCurrentVariation();
+
   return (
     <div className="relative w-full bg-gradient-to-b from-gray-900 via-purple-900 to-black overflow-hidden" style={{ height: '100dvh' }}>
       {showCanvas && (
@@ -344,6 +358,25 @@ function App() {
                   </span>
                 ))}
               </h1>
+              
+              {/* Variation Selection Line */}
+              <div className="mb-6">
+                <div className="flex flex-wrap justify-center gap-2 max-w-xs">
+                  {getAvailableVariations().map((variation) => (
+                    <button
+                      key={variation.id}
+                      onClick={() => setVariation(variation.id)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
+                        currentVariation.id === variation.id
+                          ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-400/25'
+                          : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50 hover:text-white'
+                      }`}
+                    >
+                      {variation.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
               
               {/* Test Mode Indicator */}
               {test && (
@@ -409,4 +442,14 @@ function App() {
   );
 }
 
-export default App;
+function AppRouter() {
+  return (
+    <Routes>
+      <Route path="/" element={<GameComponent />} />
+      <Route path="/wordrain" element={<GameComponent />} />
+      <Route path="/wordrain/:variationId" element={<GameComponent />} />
+    </Routes>
+  );
+}
+
+export default AppRouter;

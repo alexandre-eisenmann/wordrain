@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { useGame } from "./useGame";
 import { getRandomWord, getFontFamily } from "../gameData";
+import { useVariation } from "./useVariation";
 
 export interface Word {
   id: string;
@@ -42,6 +43,7 @@ interface WordRainState {
   accuracy: number;
   missedWords: number;
   testMode: boolean;
+  gameStartTime: number;
   
   // Actions
   spawnWord: () => void;
@@ -49,6 +51,7 @@ interface WordRainState {
   typeKey: (key: string) => { hit: boolean; completed: boolean };
   reset: () => void;
   setTestMode: (testMode: boolean) => void;
+  setGameStartTime: (time: number) => void;
 }
 
 // Utility function to wrap text at word boundaries
@@ -207,6 +210,35 @@ const getValidSpawnPosition = (word: string, fontSize: number, fontFamily: strin
   return padding + (Math.random() * availableSpace);
 };
 
+// Helper function to get font size based on variation distribution
+const getFontSize = (variation: any): number => {
+  const { min, max, distribution } = variation.fontSize;
+  
+  switch (distribution) {
+    case 'small-heavy':
+      // 70% chance of small fonts, 30% chance of larger fonts
+      return Math.random() < 0.7 
+        ? min + Math.random() * (max - min) * 0.4
+        : min + (max - min) * 0.4 + Math.random() * (max - min) * 0.6;
+    
+    case 'large-heavy':
+      // 70% chance of large fonts, 30% chance of smaller fonts
+      return Math.random() < 0.7
+        ? min + (max - min) * 0.6 + Math.random() * (max - min) * 0.4
+        : min + Math.random() * (max - min) * 0.6;
+    
+    case 'medium-focused':
+      // Focus on medium-sized fonts with normal distribution
+      const midPoint = (min + max) / 2;
+      const range = (max - min) / 2;
+      return midPoint + (Math.random() - 0.5) * range;
+    
+    case 'random':
+    default:
+      return min + Math.random() * (max - min);
+  }
+};
+
 export const useWordRain = create<WordRainState>((set, get) => ({
   words: [],
   explodingLetters: [],
@@ -217,38 +249,60 @@ export const useWordRain = create<WordRainState>((set, get) => ({
   accuracy: 100,
   missedWords: 0,
   testMode: false,
+  gameStartTime: 0,
 
   spawnWord: () => {
     const state = get();
-    console.log("🧪 Spawning word with testMode:", state.testMode, "wordsTyped:", state.wordsTyped);
-    const word = getRandomWord(state.wordsTyped, state.testMode);
-    console.log("🧪 Final spawned word:", word, "length:", word.length, "has spaces:", word.includes(' '));
-    const fontSize = Math.random() * 80 + 20; // 20-100px for much more variety
+    const variation = useVariation.getState().getCurrentVariation();
     
-    // Increase speed based on score/difficulty
-    const difficulty = Math.floor(state.wordsTyped / 10);
-    const baseSpeed = 1.5 + (difficulty * 0.3); // Start at 1.5, increase by 0.3 every 10 words
-    const speed = baseSpeed + (Math.random() * 1.5); // Add some randomness
+    // Calculate pace based on time elapsed, not words typed
+    const timeElapsed = state.gameStartTime > 0 ? (Date.now() - state.gameStartTime) / 1000 : 0;
+    const pace = Math.floor(timeElapsed / 10); // Increase pace every 10 seconds - no limit
     
-    // Rotation chance and intensity increases with difficulty
-    const rotationChance = Math.min(0.25 + (difficulty * 0.05), 0.8); // Start at 25%, increase by 5% every 10 words, max 80%
+    console.log("🎮 Spawning word with variation:", variation.name, "timeElapsed:", timeElapsed.toFixed(1), "pace:", pace);
+    const word = getRandomWord(timeElapsed, state.testMode);
+    console.log("🎮 Final spawned word:", word, "length:", word.length, "has spaces:", word.includes(' '));
+    
+    // Get font size based on variation
+    const fontSize = getFontSize(variation);
+    
+    // Calculate speed based on variation and pace
+    const baseSpeed = variation.speed.base + (pace * variation.speed.paceScaling);
+    const speed = baseSpeed + (Math.random() - 0.5) * variation.speed.variation;
+    
+    console.log("🎮 Speed calculation:", {
+      variation: variation.name,
+      pace,
+      baseSpeed: variation.speed.base,
+      paceScaling: variation.speed.paceScaling,
+      calculatedBaseSpeed: baseSpeed,
+      finalSpeed: speed
+    });
+    
+    // Calculate rotation based on variation and pace
+    const rotationChance = Math.min(
+      variation.rotationDistribution.baseChance + (pace * variation.rotationDistribution.paceScaling),
+      0.95
+    );
     const shouldRotate = Math.random() < rotationChance;
     
-    // Rotation increases with difficulty - very subtle at start, more pronounced later
-    const baseRotation = Math.min(difficulty * 0.5, 8); // Much more subtle: max 8 degrees, increases by 0.5 every 10 words
-    const rotation = shouldRotate ? (Math.random() - 0.5) * baseRotation : 0; // Random rotation within the difficulty-based range
-    const rotationDirection = shouldRotate ? (Math.random() < 0.5 ? 1 : -1) : 0; // Random direction: 50% clockwise, 50% counterclockwise
+    const baseRotation = Math.min(
+      pace * variation.rotationDistribution.maxRotation / 10,
+      variation.rotationDistribution.maxRotation
+    );
+    const rotation = shouldRotate ? (Math.random() - 0.5) * baseRotation : 0;
+    const rotationDirection = shouldRotate ? (Math.random() < 0.5 ? 1 : -1) : 0;
     
-    // Get font family first
+    // Get font family
     const fontFamily = getFontFamily();
     
-    // Get a valid spawn position that ensures the word fits within the viewport
+    // Get a valid spawn position
     const validX = getValidSpawnPosition(word, fontSize, fontFamily, rotation);
     
     // Calculate rotation center within the actual bounding box
     const bounds = calculateWordBounds(word, fontSize, fontFamily, rotation);
-    const rotationCenterX = shouldRotate ? Math.random() * bounds.width : 0; // Use actual width
-    const rotationCenterY = shouldRotate ? Math.random() * bounds.height : 0; // Use actual height
+    const rotationCenterX = shouldRotate ? Math.random() * bounds.width : 0;
+    const rotationCenterY = shouldRotate ? Math.random() * bounds.height : 0;
     
     const newWord: Word = {
       id: Math.random().toString(36).substr(2, 9),
@@ -419,12 +473,17 @@ export const useWordRain = create<WordRainState>((set, get) => ({
       accuracy: 100,
       missedWords: 0,
       testMode: currentState.testMode, // Preserve test mode state
+      gameStartTime: 0,
     });
   },
 
   setTestMode: (testMode: boolean) => {
     console.log("🧪 Setting test mode:", testMode);
     set({ testMode });
+  },
+
+  setGameStartTime: (time: number) => {
+    set({ gameStartTime: time });
   },
 }));
 
@@ -434,7 +493,9 @@ useGame.subscribe(
   (phase) => {
     if (phase === "playing") {
       console.log("Resetting WordRain due to game start");
+      const now = Date.now();
       useWordRain.getState().reset();
+      useWordRain.getState().setGameStartTime(now);
     }
   }
 );
