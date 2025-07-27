@@ -255,12 +255,11 @@ export const useWordRain = create<WordRainState>((set, get) => ({
     const state = get();
     const variation = useVariation.getState().getCurrentVariation();
     
-    // Calculate pace based on time elapsed, not words typed
-    const timeElapsed = state.gameStartTime > 0 ? (Date.now() - state.gameStartTime) / 1000 : 0;
-    const pace = Math.floor(timeElapsed / 10); // Increase pace every 10 seconds - no limit
+    // Calculate pace based on words typed, not score
+    const pace = Math.floor(state.wordsTyped / 20); // Increase pace every 20 words typed
     
-    console.log("🎮 Spawning word with variation:", variation.name, "timeElapsed:", timeElapsed.toFixed(1), "pace:", pace);
-    const word = getRandomWord(timeElapsed, state.testMode);
+    console.log("🎮 Spawning word with variation:", variation.name, "wordsTyped:", state.wordsTyped, "pace:", pace);
+    const word = getRandomWord(state.wordsTyped, state.testMode);
     console.log("🎮 Final spawned word:", word, "length:", word.length, "has spaces:", word.includes(' '));
     
     // Get font size based on variation
@@ -352,7 +351,10 @@ export const useWordRain = create<WordRainState>((set, get) => ({
     }
 
     // Remove completed words and words that are far off-screen (but keep recently missed ones visible)
-    const activeWords = updatedWords.filter((word) => !word.completed && word.y < window.innerHeight + 200);
+    const activeWords = updatedWords.filter((word) => 
+      !word.completed && 
+      word.y < window.innerHeight + 10 // Remove words almost immediately when they fall off
+    );
 
     // Update exploding letters
     const activeExplodingLetters = state.explodingLetters.filter((letter) => {

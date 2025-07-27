@@ -503,11 +503,11 @@ const FONT_FAMILIES = [
 ];
 
 // Get a random word with variation-based distribution
-export function getRandomWord(timeElapsed: number = 0, testMode: boolean = false): string {
+export function getRandomWord(wordsTyped: number = 0, testMode: boolean = false): string {
   // If test mode is enabled, only use long phrases
   if (testMode) {
     console.log("🧪 Test mode active - using long phrases only");
-    const longPhrase = getRandomLongPhrase(timeElapsed);
+    const longPhrase = getRandomLongPhrase(wordsTyped);
     console.log("🧪 Selected long phrase:", longPhrase);
     return longPhrase;
   }
@@ -540,8 +540,8 @@ export function getRandomWord(timeElapsed: number = 0, testMode: boolean = false
   };
   
   // Debug logging for first few calls
-  if (timeElapsed < 5) {
-    console.log(`🎮 Variation: ${variation.name} - Word distribution (timeElapsed: ${timeElapsed.toFixed(1)}s):`);
+  if (wordsTyped < 5) {
+    console.log(`🎮 Variation: ${variation.name} - Word distribution (score: ${wordsTyped.toFixed(1)}):`);
     Object.entries(normalizedDistribution).forEach(([category, prob]) => {
       console.log(`  ${category}: ${(prob * 100).toFixed(1)}%`);
     });
@@ -580,10 +580,10 @@ export function getRandomWord(timeElapsed: number = 0, testMode: boolean = false
       selectedWord = getRandomWordByLength(21, 999);
       break;
     case 'phrases':
-      selectedWord = getRandomPhrase(timeElapsed);
+      selectedWord = getRandomPhrase(wordsTyped);
       break;
     case 'longPhrases':
-      selectedWord = getRandomLongPhrase(timeElapsed);
+      selectedWord = getRandomLongPhrase(wordsTyped);
       break;
     default:
       selectedWord = getRandomWordByLength(3, 8); // Fallback
@@ -594,7 +594,7 @@ export function getRandomWord(timeElapsed: number = 0, testMode: boolean = false
   wordUsageCount.set(selectedWord, currentCount + 1);
   
   // Debug: Log the selected word for verification
-  if (timeElapsed < 10) {
+  if (wordsTyped < 10) {
     console.log(`🎮 Selected word: "${selectedWord}" (category: ${selectedCategory})`);
   }
   

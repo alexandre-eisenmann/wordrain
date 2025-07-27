@@ -7,7 +7,7 @@ import ExplodingLetter from "./ExplodingLetter";
 
 export default function WordRainCanvas() {
   const { phase } = useGame();
-  const { words, explodingLetters, updateGame, spawnWord } = useWordRain();
+  const { words, explodingLetters, updateGame, spawnWord, score, wordsTyped } = useWordRain();
   const { getCurrentVariation } = useVariation();
   const gameLoopRef = useRef<number>();
   const lastSpawnRef = useRef<number>(0);
@@ -31,32 +31,41 @@ export default function WordRainCanvas() {
       return;
     }
 
+    // Fallback timer to ensure words spawn
+    const fallbackTimer = setInterval(() => {
+      if (phase === "playing" && words.length < 20) { // Higher limit for fallback
+        console.log("🎮 FALLBACK SPAWN - words.length:", words.length);
+        spawnWord();
+      }
+    }, 2000); // Spawn every 2 seconds as fallback
+
     const gameLoop = (timestamp: number) => {
       const variation = getCurrentVariation();
       
-      // Calculate pace based on time elapsed, not words typed
-      const timeElapsed = (Date.now() - gameStartTimeRef.current) / 1000; // seconds
-      const pace = Math.floor(timeElapsed / 10); // Increase pace every 10 seconds - no limit
+      // Calculate pace based on words typed, not score
+      const pace = Math.floor(wordsTyped / 20); // Increase pace every 20 words typed
       
       // Calculate spawn interval based on variation and pace
-      const baseInterval = (variation.wordPace.baseInterval * 1000) - 
-        (pace * variation.wordPace.paceScaling * 1000);
+      const baseInterval = Math.max(500, (variation.wordPace.baseInterval * 1000) - 
+        (pace * variation.wordPace.paceScaling * 1000));
       
       // Add random variation to interval
       const intervalVariation = variation.wordPace.intervalVariation * 1000;
-      const finalInterval = Math.max(50, baseInterval + (Math.random() - 0.5) * intervalVariation);
+      const finalInterval = Math.max(300, baseInterval + (Math.random() - 0.5) * intervalVariation);
       
-      // Calculate max words based on variation and pace
+      // Calculate max words based on variation and pace - much higher limits
       const maxWords = variation.id === 'word-storm' ? 
-        Math.min(35, 12 + Math.floor(pace / 2)) : // Much higher max for Word Storm
+        Math.min(100, 20 + Math.floor(pace / 2)) : // Much higher max for Word Storm
         variation.specialEffects.multipleWords ? 
-          Math.min(18, 5 + Math.floor(pace / 2)) : 
-          Math.min(12, 4 + Math.floor(pace / 3));
+          Math.min(50, 10 + Math.floor(pace / 2)) : 
+          Math.min(30, 8 + Math.floor(pace / 3));
       
       const timeSinceLastSpawn = timestamp - lastSpawnRef.current;
       
       // Always spawn words if enough time has passed, regardless of user activity
       if (timeSinceLastSpawn > finalInterval && words.length < maxWords) {
+        console.log("🎮 SPAWNING WORD - timeSinceLastSpawn:", timeSinceLastSpawn, "finalInterval:", finalInterval, "words.length:", words.length, "maxWords:", maxWords);
+        
         // Handle word clusters for Word Storm variation
         if (variation.id === 'word-storm' && Math.random() < 0.4) {
           // Spawn multiple words at once for Word Storm
@@ -74,6 +83,8 @@ export default function WordRainCanvas() {
           spawnWord();
         }
         lastSpawnRef.current = timestamp;
+      } else {
+        console.log("🎮 NOT SPAWNING - timeSinceLastSpawn:", timeSinceLastSpawn, "finalInterval:", finalInterval, "words.length:", words.length, "maxWords:", maxWords);
       }
 
       // Update game state
@@ -88,8 +99,9 @@ export default function WordRainCanvas() {
       if (gameLoopRef.current) {
         cancelAnimationFrame(gameLoopRef.current);
       }
+      clearInterval(fallbackTimer); // Clean up fallback timer
     };
-  }, [phase, words.length, updateGame, spawnWord, getCurrentVariation]);
+  }, [phase, words.length, updateGame, spawnWord, getCurrentVariation, score, wordsTyped]);
 
   if (phase !== "playing") return null;
 
