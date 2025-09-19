@@ -57,10 +57,10 @@ export interface GameVariation {
   };
 }
 
-// Default variation (current game behavior)
-export const DEFAULT_VARIATION: GameVariation = {
-  id: 'default',
-  name: 'Classic',
+// Hard variation (original game behavior)
+export const HARD_VARIATION: GameVariation = {
+  id: 'hard',
+  name: 'Hard',
   description: 'The original WordRain experience with balanced pace progression',
   
   wordPace: {
@@ -111,59 +111,6 @@ export const DEFAULT_VARIATION: GameVariation = {
   },
 };
 
-// Slow and steady variation - longer phrases, slower pace
-export const SLOW_STEADY_VARIATION: GameVariation = {
-  id: 'slow-steady',
-  name: 'Slow & Steady',
-  description: 'Longer phrases at a relaxed pace - perfect for building vocabulary',
-  
-  wordPace: {
-    baseInterval: 1.5, // Faster base spawning - NOT tied to user activity
-    intervalVariation: 0.5,
-    paceScaling: 0.05,
-  },
-  
-  wordSizeDistribution: {
-    shortWords: 0.1,
-    mediumWords: 0.2,
-    longWords: 0.3,
-    veryLongWords: 0.25,
-    extremelyLongWords: 0.1,
-    phrases: 0.05,
-    longPhrases: 0.0,
-  },
-  
-  rotationDistribution: {
-    baseChance: 0.1,
-    paceScaling: 0.02,
-    maxRotation: 5,
-    rotationSpeed: 0.5,
-  },
-  
-  paceSlope: {
-    speedIncrease: 0.2,
-    rotationIncrease: 0.02,
-  },
-  
-  fontSize: {
-    min: 24,
-    max: 80,
-    distribution: 'medium-focused',
-  },
-  
-  speed: {
-    base: 1.0,
-    variation: 0.8,
-    paceScaling: 0.6, // Much more dramatic speed increase
-  },
-  
-  specialEffects: {
-    multipleWords: false,
-    wordClusters: false,
-    colorVariation: false,
-    soundVariation: false,
-  },
-};
 
 // Word Storm variation - slow but dense rain of words
 export const WORD_STORM_VARIATION: GameVariation = {
@@ -327,10 +274,65 @@ export const PHRASE_MASTER_VARIATION: GameVariation = {
   },
 };
 
+// Classic variation - very easy for children learning to type
+export const CLASSIC_VARIATION: GameVariation = {
+  id: 'classic',
+  name: 'Classic',
+  description: 'Perfect for kids learning to type - slow words with lots of space',
+  
+  wordPace: {
+    baseInterval: 4.0, // Very slow spawning - 4 seconds between words
+    intervalVariation: 1.0, // Good variation for natural feel
+    paceScaling: 0.05, // Very slow pace scaling
+  },
+  
+  wordSizeDistribution: {
+    shortWords: 0.9, // Almost all short words (3-5 letters)
+    mediumWords: 0.1, // Only a few medium words
+    longWords: 0.0, // No long words
+    veryLongWords: 0.0, // No very long words
+    extremelyLongWords: 0.0, // No extremely long words
+    phrases: 0.0, // No phrases
+    longPhrases: 0.0, // No long phrases
+  },
+  
+  rotationDistribution: {
+    baseChance: 0.0, // No rotation for simplicity
+    paceScaling: 0.0,
+    maxRotation: 0,
+    rotationSpeed: 0,
+  },
+  
+  paceSlope: {
+    speedIncrease: 0.1, // Very slow speed increase
+    rotationIncrease: 0.0,
+  },
+  
+  fontSize: {
+    min: 32, // Larger font for easier reading
+    max: 48, // Consistent, readable size
+    distribution: 'medium-focused',
+  },
+  
+  speed: {
+    base: 0.4, // Very slow falling speed
+    variation: 0.2, // Small variation
+    paceScaling: 0.2, // Slow speed increase
+  },
+  
+  specialEffects: {
+    multipleWords: false, // Only one word at a time
+    wordClusters: false, // No clusters
+    colorVariation: false, // Consistent colors
+    soundVariation: false, // Consistent sounds
+  },
+};
+
 // All available variations
 export const GAME_VARIATIONS: Record<string, GameVariation> = {
-  default: DEFAULT_VARIATION,
-  'slow-steady': SLOW_STEADY_VARIATION,
+  default: CLASSIC_VARIATION, // Classic is now the default
+  classic: CLASSIC_VARIATION,
+  hard: HARD_VARIATION,
   'word-storm': WORD_STORM_VARIATION,
   'rotation-madness': ROTATION_MADNESS_VARIATION,
   'phrase-master': PHRASE_MASTER_VARIATION,
@@ -338,12 +340,19 @@ export const GAME_VARIATIONS: Record<string, GameVariation> = {
 
 // Get a variation by ID
 export function getVariation(id: string): GameVariation {
-  return GAME_VARIATIONS[id] || DEFAULT_VARIATION;
+  return GAME_VARIATIONS[id] || CLASSIC_VARIATION;
 }
 
 // Get all available variations
 export function getAllVariations(): GameVariation[] {
-  return Object.values(GAME_VARIATIONS);
+  const variations = [
+    CLASSIC_VARIATION,
+    HARD_VARIATION,
+    WORD_STORM_VARIATION,
+    ROTATION_MADNESS_VARIATION,
+    PHRASE_MASTER_VARIATION,
+  ];
+  return variations;
 }
 
 // Validate variation ID

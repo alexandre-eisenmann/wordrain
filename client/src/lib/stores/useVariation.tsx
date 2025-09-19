@@ -13,7 +13,7 @@ interface VariationState {
 }
 
 export const useVariation = create<VariationState>((set, get) => ({
-  currentVariation: getVariation('default'),
+  currentVariation: getVariation('classic'),
   availableVariations: getAllVariations(),
   
   setVariation: (variationId: string) => {
@@ -22,8 +22,8 @@ export const useVariation = create<VariationState>((set, get) => ({
       set({ currentVariation: variation });
       console.log(`🎮 Variation changed to: ${variation.name} (${variation.id})`);
     } else {
-      console.warn(`⚠️ Invalid variation ID: ${variationId}, using default`);
-      set({ currentVariation: getVariation('default') });
+      console.warn(`⚠️ Invalid variation ID: ${variationId}, using classic`);
+      set({ currentVariation: getVariation('classic') });
     }
   },
   

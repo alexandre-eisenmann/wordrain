@@ -407,8 +407,8 @@ function GameComponent() {
 
           {/* Game Over Screen */}
           {phase === "ended" && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center">
-              <h2 className="text-3xl font-bold text-red-400 mb-3 tracking-wider" style={{ fontFamily: "'Fira Code', 'Courier New', monospace" }}>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-30 backdrop-blur-sm">
+              <h2 className="text-4xl font-bold text-red-400 mb-4 tracking-wider" style={{ fontFamily: "'Fira Code', 'Courier New', monospace" }}>
                 {"GAME OVER".split("").map((letter, index) => (
                   <span
                     key={index}
@@ -421,15 +421,50 @@ function GameComponent() {
                   </span>
                 ))}
               </h2>
-              <p className="text-base text-red-200 mb-4">
+              
+              {/* Variation Selection Line */}
+              <div className="mb-6">
+                <div className="flex flex-wrap justify-center gap-2 max-w-xs">
+                  {getAvailableVariations().map((variation) => (
+                    <button
+                      key={variation.id}
+                      onClick={() => setVariation(variation.id)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
+                        currentVariation.id === variation.id
+                          ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-400/25'
+                          : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50 hover:text-white'
+                      }`}
+                    >
+                      {variation.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Test Mode Indicator */}
+              {test && (
+                <div className="mb-6">
+                  <div className="bg-yellow-500 text-black px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2">
+                    <span>🧪</span>
+                    <span>TEST MODE - LONG PHRASES ONLY</span>
+                  </div>
+                </div>
+              )}
+              
+              <p className="text-xl text-red-200 mb-4 font-light">
                 5 words escaped!
               </p>
+              
+              <p className="text-lg text-cyan-100 mb-8 font-light">
+                Type fast. Think faster. Don't miss 5 words.
+              </p>
+              
               <button
                 onClick={handleRestartGame}
                 data-allow-click="true"
-                className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg text-lg transition-all duration-200 shadow-lg hover:shadow-red-400/25"
+                className="px-8 py-4 bg-cyan-600 hover:bg-cyan-500 text-black font-semibold rounded-lg text-xl transition-all duration-200 shadow-lg hover:shadow-cyan-400/25"
                 style={{
-                  boxShadow: "0 0 20px rgba(239, 68, 68, 0.3)"
+                  boxShadow: "0 0 20px rgba(34, 211, 238, 0.3)"
                 }}
               >
                 RESTART
