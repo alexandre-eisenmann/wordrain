@@ -1,14 +1,33 @@
 import { create } from "zustand";
 import { useGame } from "./useGame";
 import { getRandomWord, getFontFamily } from "../gameData";
-import { useVariation } from "./useVariation";
+import {
+  computeIntensity,
+  getPhase,
+  getFallSpeed,
+  getRotation,
+  getWordSizeDistribution,
+  clamp,
+  CLEAR_TARGET,
+  type Phase,
+} from "../progression";
+import type { Theme } from "../variations";
+import {
+  stageTheme,
+  stageDrivenIntensity,
+  stageGoalWords,
+  stageBaseIntensity,
+  stageMultiplier,
+  computeStars,
+  STAR_BONUS,
+} from "../stages";
 
 export interface Word {
   id: string;
   text: string;
   x: number;
   y: number;
-  speed: number;
+  speed: number; // px per SECOND (dt-scaled, frame-rate independent)
   fontSize: number;
   fontFamily: string;
   cursorPosition: number;
@@ -18,6 +37,7 @@ export interface Word {
   rotationDirection: number;
   rotationCenterX: number;
   rotationCenterY: number;
+  rotationSpeed: number; // seconds per full revolution (0 = no spin)
 }
 
 export interface ExplodingLetter {
@@ -44,28 +64,62 @@ interface WordRainState {
   missedWords: number;
   testMode: boolean;
   gameStartTime: number;
-  
+
+  // Progression state
+  intensity: number;
+  phase: Phase;
+  // Decayed rolling performance signals (feed the flow channel)
+  recentCorrect: number;
+  recentTotal: number;
+  recentMissEMA: number;
+  clearHeightEMA: number; // screen-Y fraction where words are destroyed (skill signal)
+
+  // Arcade stage state
+  stage: number;
+  stageWordsCleared: number;
+  totalStars: number;
+  lastStageStars: number; // shown on the stage-clear interstitial
+  lastStageBonus: number;
+  // Per-stage metric accumulators (reset each stage) for the star rating
+  stageKeystrokes: number;
+  stageCorrect: number;
+  stageMisses: number;
+  stageClearHeightSum: number;
+  stageClearCount: number;
+
   // Actions
   spawnWord: () => void;
-  updateGame: () => void;
+  tick: (dtSec: number) => void;
   typeKey: (key: string) => { hit: boolean; completed: boolean };
+  advanceStage: () => void;
+  setStage: (stage: number) => void;
   reset: () => void;
   setTestMode: (testMode: boolean) => void;
   setGameStartTime: (time: number) => void;
 }
+
+// Decay time-constants (seconds) for the rolling performance signals.
+const ACCURACY_TAU = 6;
+const MISS_TAU = 3.5;
+// Clamp dt so a backgrounded tab doesn't teleport every word off-screen.
+const MAX_DT = 0.05; // 50ms
+// How quickly the clear-height signal tracks the latest kills (0..1 per word).
+const CLEAR_HEIGHT_ALPHA = 0.35;
+// Max bonus points for destroying a word at the very top of the screen.
+const HEIGHT_BONUS_MAX = 100;
 
 // Utility function to wrap text at word boundaries
 const wrapText = (text: string, maxWidth: number, fontSize: number, fontFamily: string): string[] => {
   // Create a temporary canvas to measure text accurately
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-  
+
   if (!ctx) {
     // Fallback: simple word-based wrapping
     const words = text.split(' ');
     const lines: string[] = [];
     let currentLine = '';
-    
+
     for (const word of words) {
       const testLine = currentLine + (currentLine ? ' ' : '') + word;
       if (testLine.length * fontSize * 0.6 > maxWidth && currentLine) {
@@ -80,17 +134,17 @@ const wrapText = (text: string, maxWidth: number, fontSize: number, fontFamily: 
     }
     return lines;
   }
-  
+
   // Set font and measure text
   ctx.font = `${fontSize}px ${fontFamily}`;
   const words = text.split(' ');
   const lines: string[] = [];
   let currentLine = '';
-  
+
   for (const word of words) {
     const testLine = currentLine + (currentLine ? ' ' : '') + word;
     const metrics = ctx.measureText(testLine);
-    
+
     if (metrics.width > maxWidth && currentLine) {
       lines.push(currentLine);
       currentLine = word;
@@ -98,11 +152,11 @@ const wrapText = (text: string, maxWidth: number, fontSize: number, fontFamily: 
       currentLine = testLine;
     }
   }
-  
+
   if (currentLine) {
     lines.push(currentLine);
   }
-  
+
   // If we still have lines that are too wide, force break them
   const finalLines: string[] = [];
   for (const line of lines) {
@@ -125,7 +179,7 @@ const wrapText = (text: string, maxWidth: number, fontSize: number, fontFamily: 
       finalLines.push(line);
     }
   }
-  
+
   return finalLines;
 };
 
@@ -134,31 +188,31 @@ const calculateWordBounds = (text: string, fontSize: number, fontFamily: string,
   // Create a temporary canvas to measure text accurately
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-  
+
   if (!ctx) {
     // Fallback calculation if canvas is not available
     const charWidth = fontSize * 0.6; // Approximate character width
     const wordWidth = text.length * charWidth;
     const wordHeight = fontSize;
-    
+
     // For rotating words, calculate the maximum width when horizontal
-    const maxWidth = Math.abs(wordWidth * Math.cos(rotation * Math.PI / 180)) + 
+    const maxWidth = Math.abs(wordWidth * Math.cos(rotation * Math.PI / 180)) +
                     Math.abs(wordHeight * Math.sin(rotation * Math.PI / 180));
-    
+
     return { width: wordWidth, height: wordHeight, maxWidth: Math.max(wordWidth, maxWidth) };
   }
-  
+
   // Determine if this is a long phrase that needs wrapping
   // More aggressive wrapping for test mode phrases
   const isLongPhrase = text.length > 15 || text.includes(' ') && text.length > 12;
-  const maxLineWidth = isLongPhrase ? Math.min(window.innerWidth * 0.7, 600) : undefined; // Increased from 0.8 to 0.7 and 400 to 600
-  
+  const maxLineWidth = isLongPhrase ? Math.min(window.innerWidth * 0.7, 600) : undefined;
+
   if (isLongPhrase && maxLineWidth) {
     // Calculate bounds for wrapped text
     const lines = wrapText(text, maxLineWidth, fontSize, fontFamily);
     const lineHeight = fontSize * 1.2;
     const totalHeight = lines.length * lineHeight;
-    
+
     // Find the widest line
     let widestLineWidth = 0;
     for (const line of lines) {
@@ -166,11 +220,11 @@ const calculateWordBounds = (text: string, fontSize: number, fontFamily: string,
       const metrics = ctx.measureText(line);
       widestLineWidth = Math.max(widestLineWidth, metrics.width);
     }
-    
+
     // For rotating words, calculate the maximum width when horizontal
-    const maxWidth = Math.abs(widestLineWidth * Math.cos(rotation * Math.PI / 180)) + 
+    const maxWidth = Math.abs(widestLineWidth * Math.cos(rotation * Math.PI / 180)) +
                     Math.abs(totalHeight * Math.sin(rotation * Math.PI / 180));
-    
+
     return { width: widestLineWidth, height: totalHeight, maxWidth: Math.max(widestLineWidth, maxWidth) };
   } else {
     // Original calculation for single-line text
@@ -178,11 +232,11 @@ const calculateWordBounds = (text: string, fontSize: number, fontFamily: string,
     const metrics = ctx.measureText(text);
     const wordWidth = metrics.width;
     const wordHeight = fontSize;
-    
+
     // For rotating words, calculate the maximum width when horizontal
-    const maxWidth = Math.abs(wordWidth * Math.cos(rotation * Math.PI / 180)) + 
+    const maxWidth = Math.abs(wordWidth * Math.cos(rotation * Math.PI / 180)) +
                     Math.abs(wordHeight * Math.sin(rotation * Math.PI / 180));
-    
+
     return { width: wordWidth, height: wordHeight, maxWidth: Math.max(wordWidth, maxWidth) };
   }
 };
@@ -192,47 +246,46 @@ const getValidSpawnPosition = (word: string, fontSize: number, fontFamily: strin
   const bounds = calculateWordBounds(word, fontSize, fontFamily, rotation);
   const maxWordWidth = bounds.maxWidth;
   const viewportWidth = window.innerWidth;
-  
+
   // Ensure the word fits within the viewport with more padding for long phrases
   const isLongPhrase = word.length > 15 || word.includes(' ') && word.length > 12;
-  const padding = isLongPhrase ? 40 : 20; // More padding for long phrases
-  
+  const padding = isLongPhrase ? 40 : 20;
+
   // Calculate the available space for positioning
   const availableSpace = viewportWidth - maxWordWidth - (padding * 2);
-  
+
   // If the word is too wide for the viewport, center it
   if (availableSpace < 0) {
-    console.log("⚠️ Word too wide for viewport, centering:", word, "width:", maxWordWidth, "viewport:", viewportWidth);
     return (viewportWidth - maxWordWidth) / 2;
   }
-  
+
   // Return a random position that ensures the word fits, with balanced distribution
   return padding + (Math.random() * availableSpace);
 };
 
-// Helper function to get font size based on variation distribution
-const getFontSize = (variation: any): number => {
-  const { min, max, distribution } = variation.fontSize;
-  
+// Helper function to get font size based on theme distribution
+const getFontSize = (theme: Theme): number => {
+  const { min, max, distribution } = theme.fontSize;
+
   switch (distribution) {
     case 'small-heavy':
       // 70% chance of small fonts, 30% chance of larger fonts
-      return Math.random() < 0.7 
+      return Math.random() < 0.7
         ? min + Math.random() * (max - min) * 0.4
         : min + (max - min) * 0.4 + Math.random() * (max - min) * 0.6;
-    
+
     case 'large-heavy':
       // 70% chance of large fonts, 30% chance of smaller fonts
       return Math.random() < 0.7
         ? min + (max - min) * 0.6 + Math.random() * (max - min) * 0.4
         : min + Math.random() * (max - min) * 0.6;
-    
+
     case 'medium-focused':
       // Focus on medium-sized fonts with normal distribution
       const midPoint = (min + max) / 2;
       const range = (max - min) / 2;
       return midPoint + (Math.random() - 0.5) * range;
-    
+
     case 'random':
     default:
       return min + Math.random() * (max - min);
@@ -251,58 +304,53 @@ export const useWordRain = create<WordRainState>((set, get) => ({
   testMode: false,
   gameStartTime: 0,
 
+  intensity: 0,
+  phase: "warmup",
+  recentCorrect: 0,
+  recentTotal: 0,
+  recentMissEMA: 0,
+  clearHeightEMA: CLEAR_TARGET,
+
+  stage: 1,
+  stageWordsCleared: 0,
+  totalStars: 0,
+  lastStageStars: 0,
+  lastStageBonus: 0,
+  stageKeystrokes: 0,
+  stageCorrect: 0,
+  stageMisses: 0,
+  stageClearHeightSum: 0,
+  stageClearCount: 0,
+
   spawnWord: () => {
     const state = get();
-    const variation = useVariation.getState().getCurrentVariation();
-    
-    // Calculate pace based on words typed, not score
-    const pace = Math.floor(state.wordsTyped / 20); // Increase pace every 20 words typed
-    
-    console.log("🎮 Spawning word with variation:", variation.name, "wordsTyped:", state.wordsTyped, "pace:", pace);
-    const word = getRandomWord(state.wordsTyped, state.testMode);
-    console.log("🎮 Final spawned word:", word, "length:", word.length, "has spaces:", word.includes(' '));
-    
-    // Get font size based on variation
-    const fontSize = getFontSize(variation);
-    
-    // Calculate speed based on variation and pace
-    const baseSpeed = variation.speed.base + (pace * variation.speed.paceScaling);
-    const speed = baseSpeed + (Math.random() - 0.5) * variation.speed.variation;
-    
-    console.log("🎮 Speed calculation:", {
-      variation: variation.name,
-      pace,
-      baseSpeed: variation.speed.base,
-      paceScaling: variation.speed.paceScaling,
-      calculatedBaseSpeed: baseSpeed,
-      finalSpeed: speed
-    });
-    
-    // Calculate rotation based on variation and pace
-    const rotationChance = Math.min(
-      variation.rotationDistribution.baseChance + (pace * variation.rotationDistribution.paceScaling),
-      0.95
-    );
-    const shouldRotate = Math.random() < rotationChance;
-    
-    const baseRotation = Math.min(
-      pace * variation.rotationDistribution.maxRotation / 10,
-      variation.rotationDistribution.maxRotation
-    );
-    const rotation = shouldRotate ? (Math.random() - 0.5) * baseRotation : 0;
+    const theme = stageTheme(state.stage);
+    const intensity = state.intensity;
+
+    // Word text comes from the intensity-driven size distribution.
+    const distribution = getWordSizeDistribution(intensity, theme);
+    const word = getRandomWord(state.wordsTyped, state.testMode, distribution);
+
+    const fontSize = getFontSize(theme);
+
+    // Fall speed (px/s) with a small per-word variance for organic feel.
+    const baseSpeed = getFallSpeed(intensity, theme);
+    const speed = baseSpeed * (0.9 + Math.random() * 0.2);
+
+    // Rotation is intensity- and theme-gated.
+    const rot = getRotation(intensity, theme);
+    const shouldRotate = Math.random() < rot.chance;
+    const rotation = shouldRotate ? (Math.random() - 0.5) * rot.maxAngle : 0;
     const rotationDirection = shouldRotate ? (Math.random() < 0.5 ? 1 : -1) : 0;
-    
-    // Get font family
+    const rotationSpeed = shouldRotate ? Math.max(3, 12 - rot.speed * 3) : 0;
+
     const fontFamily = getFontFamily();
-    
-    // Get a valid spawn position
     const validX = getValidSpawnPosition(word, fontSize, fontFamily, rotation);
-    
-    // Calculate rotation center within the actual bounding box
+
     const bounds = calculateWordBounds(word, fontSize, fontFamily, rotation);
     const rotationCenterX = shouldRotate ? Math.random() * bounds.width : 0;
     const rotationCenterY = shouldRotate ? Math.random() * bounds.height : 0;
-    
+
     const newWord: Word = {
       id: Math.random().toString(36).substr(2, 9),
       text: word,
@@ -310,66 +358,94 @@ export const useWordRain = create<WordRainState>((set, get) => ({
       y: -50,
       speed,
       fontSize,
-      fontFamily: fontFamily,
+      fontFamily,
       cursorPosition: 0,
       completed: false,
       missed: false,
-      rotation: rotation,
-      rotationDirection: rotationDirection,
-      rotationCenterX: rotationCenterX,
-      rotationCenterY: rotationCenterY,
+      rotation,
+      rotationDirection,
+      rotationCenterX,
+      rotationCenterY,
+      rotationSpeed,
     };
 
-    set((state) => ({
-      words: [...state.words, newWord],
-    }));
+    set((s) => ({ words: [...s.words, newWord] }));
   },
 
-  updateGame: () => {
+  // Frame update. dtSec is the real elapsed seconds since the last frame, so
+  // motion and progression are independent of the display refresh rate.
+  tick: (dtSec: number) => {
     const state = get();
     const { end } = useGame.getState();
-    
-    // Update word positions
+    const theme = stageTheme(state.stage);
+    const dt = clamp(dtSec, 0, MAX_DT);
+
+    // Decay the rolling performance signals toward zero.
+    const accDecay = Math.exp(-dt / ACCURACY_TAU);
+    let recentCorrect = state.recentCorrect * accDecay;
+    let recentTotal = state.recentTotal * accDecay;
+    let recentMissEMA = state.recentMissEMA * Math.exp(-dt / MISS_TAU);
+
+    // Advance word positions (per-second).
     const updatedWords = state.words.map((word) => ({
       ...word,
-      y: word.y + word.speed,
+      y: word.y + word.speed * dt,
     }));
 
-    // Check for words that reached the bottom (missed words) - only count each word once
-    const newlyMissedWords = updatedWords.filter((word) => 
-      word.y > window.innerHeight && 
-      !word.completed && 
-      !word.missed // Only count words that haven't been counted yet
+    // Words that fell off the bottom this frame count as missed (once).
+    const viewportHeight = window.innerHeight;
+    const newlyMissed = updatedWords.filter(
+      (w) => w.y > viewportHeight && !w.completed && !w.missed,
     );
-    
     let newMissedWords = state.missedWords;
-    
-    // Mark newly missed words and count them
-    if (newlyMissedWords.length > 0) {
-      newlyMissedWords.forEach(word => word.missed = true);
-      newMissedWords += newlyMissedWords.length;
+    let stageMisses = state.stageMisses;
+    if (newlyMissed.length > 0) {
+      newlyMissed.forEach((w) => (w.missed = true));
+      newMissedWords += newlyMissed.length;
+      stageMisses += newlyMissed.length;
+      recentMissEMA += newlyMissed.length;
     }
 
-    // Remove completed words and words that are far off-screen (but keep recently missed ones visible)
-    const activeWords = updatedWords.filter((word) => 
-      !word.completed && 
-      word.y < window.innerHeight + 10 // Remove words almost immediately when they fall off
+    // Keep only active, on-screen words.
+    const activeWords = updatedWords.filter(
+      (w) => !w.completed && w.y < viewportHeight + 10,
     );
 
-    // Update exploding letters
+    // Age out exploding letters.
     const activeExplodingLetters = state.explodingLetters.filter((letter) => {
-      const age = Date.now() - parseInt(letter.id.split('-')[2]); // Updated to match new ID format
-      return age < letter.duration * 1000; // Remove after individual letter duration
+      const age = Date.now() - parseInt(letter.id.split("-")[2]);
+      return age < letter.duration * 1000;
     });
 
-    // Update state with all changes
+    // Stage-driven base intensity + skill modulation.
+    const baseIntensity = stageDrivenIntensity(state.stage, state.stageWordsCleared);
+    const accuracy = recentTotal > 0.5 ? recentCorrect / recentTotal : 1;
+
+    const intensity = computeIntensity(
+      state.intensity,
+      {
+        baseIntensity,
+        accuracy,
+        recentMisses: recentMissEMA,
+        clearHeight: state.clearHeightEMA,
+        theme,
+      },
+      dt,
+    );
+    const phase = getPhase(intensity);
+
     set({
       words: activeWords,
       explodingLetters: activeExplodingLetters,
       missedWords: newMissedWords,
+      stageMisses,
+      intensity,
+      phase,
+      recentCorrect,
+      recentTotal,
+      recentMissEMA,
     });
 
-    // Check for game over after state update
     if (newMissedWords >= 5) {
       end();
     }
@@ -380,87 +456,160 @@ export const useWordRain = create<WordRainState>((set, get) => ({
     let hit = false;
     let completed = false;
     let newExplodingLetters: ExplodingLetter[] = [];
+    const completedHeights: number[] = []; // screen-Y fraction of each word cleared this keystroke
 
     const updatedWords = state.words.map((word) => {
       if (word.completed) return word;
 
       const expectedChar = word.text[word.cursorPosition];
-      
+
       // Handle all characters (spaces, letters, numbers, punctuation) - case sensitive
       if ((key === " " && expectedChar === " ") || expectedChar === key) {
         hit = true;
         const newCursorPosition = word.cursorPosition + 1;
-        
+
         if (newCursorPosition >= word.text.length) {
           // Word completed - create explosion effect
           completed = true;
-          
-          // Determine if this is a long phrase that needs wrapping
-          // Lowered thresholds for easier testing - can be adjusted back later
+          completedHeights.push(clamp(word.y / window.innerHeight, 0, 1));
+
           const isLongPhrase = word.text.length > 15 || word.text.includes(' ') && word.text.length > 12;
           const maxLineWidth = isLongPhrase ? Math.min(window.innerWidth * 0.8, 400) : undefined;
-          
-          // Get wrapped lines if needed
-          const lines = isLongPhrase && maxLineWidth 
+
+          const lines = isLongPhrase && maxLineWidth
             ? wrapText(word.text, maxLineWidth, word.fontSize, word.fontFamily)
             : [word.text];
-          
-          // Create exploding letters for each character, accounting for line breaks
+
           const explosionLetters: ExplodingLetter[] = [];
           const lineHeight = word.fontSize * 1.2;
-          
-          // Calculate word size factor for proportional blast effect
-          const wordSizeFactor = word.text.length
-          
+
+          // Bigger words burst with more energy.
+          const wordSizeFactor = word.text.length;
+
           lines.forEach((line, lineIndex) => {
             line.split("").forEach((char, charIndex) => {
-              const globalIndex = lineIndex === 0 ? charIndex : 
-                lines.slice(0, lineIndex).join('').length + charIndex + lineIndex; // Account for spaces between lines
-              
+              const globalIndex = lineIndex === 0 ? charIndex :
+                lines.slice(0, lineIndex).join('').length + charIndex + lineIndex;
+
               explosionLetters.push({
                 id: `explosion-${word.id}-${Date.now()}-${globalIndex}`,
                 char,
                 x: word.x + (charIndex * word.fontSize * 0.6),
                 y: word.y + (lineIndex * lineHeight),
-                vx: (Math.random() - 0.5) * 500 * wordSizeFactor, // Proportional horizontal velocity
-                vy: (Math.random() - 0.5) * 500 * wordSizeFactor, // Proportional vertical velocity
+                vx: (Math.random() - 0.5) * 500 * wordSizeFactor,
+                vy: (Math.random() - 0.5) * 500 * wordSizeFactor,
                 fontSize: word.fontSize,
                 fontFamily: word.fontFamily,
-                rotation: (Math.random() - 0.5) * 1200 * wordSizeFactor, // Proportional rotation for spinning effect
-                duration: Math.random() * 4 + 2, // Keep duration consistent for visual coherence
+                rotation: (Math.random() - 0.5) * 1200 * wordSizeFactor,
+                duration: Math.random() * 4 + 2,
               });
             });
           });
-          
+
           newExplodingLetters.push(...explosionLetters);
-          
+
           return { ...word, completed: true };
         }
-        
+
         return { ...word, cursorPosition: newCursorPosition };
       }
-      
+
       return word;
     });
 
-    // Update stats
+    const multiplier = stageMultiplier(state.stage);
+
+    // Height-based reward: clearing a word higher up is worth more, feeds the
+    // skill signal, and accumulates the stage star metrics.
+    let heightBonus = 0;
+    let clearHeightEMA = state.clearHeightEMA;
+    let stageClearHeightSum = state.stageClearHeightSum;
+    for (const frac of completedHeights) {
+      clearHeightEMA += (frac - clearHeightEMA) * CLEAR_HEIGHT_ALPHA;
+      heightBonus += Math.round(HEIGHT_BONUS_MAX * (1 - frac));
+      stageClearHeightSum += frac;
+    }
+
+    // All earned points are scaled by the stage multiplier.
+    const earned = Math.round(((hit ? 10 : 0) + (completed ? 50 : 0) + heightBonus) * multiplier);
+
     const newTotalKeystrokes = state.totalKeystrokes + 1;
     const newCorrectKeystrokes = state.correctKeystrokes + (hit ? 1 : 0);
     const newAccuracy = (newCorrectKeystrokes / newTotalKeystrokes) * 100;
-    const newScore = state.score + (hit ? 10 : 0) + (completed ? 50 : 0);
-    const newWordsTyped = state.wordsTyped + (completed ? 1 : 0);
+    const newWordsTyped = state.wordsTyped + completedHeights.length;
+    const newStageWordsCleared = state.stageWordsCleared + completedHeights.length;
 
     set({
       words: updatedWords,
       explodingLetters: [...state.explodingLetters, ...newExplodingLetters],
-      score: newScore,
+      score: state.score + earned,
       wordsTyped: newWordsTyped,
       totalKeystrokes: newTotalKeystrokes,
       correctKeystrokes: newCorrectKeystrokes,
       accuracy: newAccuracy,
+      recentTotal: state.recentTotal + 1,
+      recentCorrect: state.recentCorrect + (hit ? 1 : 0),
+      clearHeightEMA,
+      stageWordsCleared: newStageWordsCleared,
+      stageKeystrokes: state.stageKeystrokes + 1,
+      stageCorrect: state.stageCorrect + (hit ? 1 : 0),
+      stageClearHeightSum,
+      stageClearCount: state.stageClearCount + completedHeights.length,
     });
 
+    // Stage cleared? Compute stars, award the bonus, freeze for the interstitial.
+    if (completedHeights.length > 0 && newStageWordsCleared >= stageGoalWords(state.stage)) {
+      const s = get();
+      const stageAccuracy = s.stageKeystrokes > 0 ? s.stageCorrect / s.stageKeystrokes : 1;
+      const avgClearHeight =
+        s.stageClearCount > 0 ? s.stageClearHeightSum / s.stageClearCount : CLEAR_TARGET;
+      const stars = computeStars({
+        accuracy: stageAccuracy,
+        avgClearHeight,
+        misses: s.stageMisses,
+      });
+      const bonus = Math.round(stars * STAR_BONUS * multiplier);
+      set({
+        score: s.score + bonus,
+        lastStageStars: stars,
+        lastStageBonus: bonus,
+        totalStars: s.totalStars + stars,
+      });
+      useGame.getState().stageClear();
+    }
+
     return { hit, completed };
+  },
+
+  // Move to the next stage after the interstitial. Intensity is left untouched
+  // so it carries over seamlessly (it already ramped to the next stage's floor).
+  advanceStage: () => {
+    set((s) => ({
+      stage: s.stage + 1,
+      words: [],
+      explodingLetters: [],
+      stageWordsCleared: 0,
+      stageKeystrokes: 0,
+      stageCorrect: 0,
+      stageMisses: 0,
+      stageClearHeightSum: 0,
+      stageClearCount: 0,
+    }));
+    useGame.getState().resume();
+  },
+
+  // Jump straight to a stage (used by ?stage=N for tuning).
+  setStage: (stage: number) => {
+    set({
+      stage,
+      stageWordsCleared: 0,
+      stageKeystrokes: 0,
+      stageCorrect: 0,
+      stageMisses: 0,
+      stageClearHeightSum: 0,
+      stageClearCount: 0,
+      intensity: stageBaseIntensity(stage),
+    });
   },
 
   reset: () => {
@@ -476,11 +625,26 @@ export const useWordRain = create<WordRainState>((set, get) => ({
       missedWords: 0,
       testMode: currentState.testMode, // Preserve test mode state
       gameStartTime: 0,
+      intensity: 0,
+      phase: "warmup",
+      recentCorrect: 0,
+      recentTotal: 0,
+      recentMissEMA: 0,
+      clearHeightEMA: CLEAR_TARGET,
+      stage: 1,
+      stageWordsCleared: 0,
+      totalStars: 0,
+      lastStageStars: 0,
+      lastStageBonus: 0,
+      stageKeystrokes: 0,
+      stageCorrect: 0,
+      stageMisses: 0,
+      stageClearHeightSum: 0,
+      stageClearCount: 0,
     });
   },
 
   setTestMode: (testMode: boolean) => {
-    console.log("🧪 Setting test mode:", testMode);
     set({ testMode });
   },
 
@@ -489,15 +653,18 @@ export const useWordRain = create<WordRainState>((set, get) => ({
   },
 }));
 
-// Reset game when transitioning to playing phase
+// Reset game when transitioning to playing phase from a non-stage source.
+// (advanceStage handles the stageClear -> playing transition itself, so only a
+// fresh start from "ready"/"ended" should wipe the run.)
+let prevPhase = useGame.getState().phase;
 useGame.subscribe(
   (state) => state.phase,
   (phase) => {
-    if (phase === "playing") {
-      console.log("Resetting WordRain due to game start");
+    if (phase === "playing" && prevPhase !== "stageClear") {
       const now = Date.now();
       useWordRain.getState().reset();
       useWordRain.getState().setGameStartTime(now);
     }
+    prevPhase = phase;
   }
 );

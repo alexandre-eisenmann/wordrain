@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Word, useWordRain } from "../../lib/stores/useWordRain";
+import { Word } from "../../lib/stores/useWordRain";
 
 interface FallingWordProps {
   word: Word;
@@ -58,13 +58,7 @@ const wrapText = (text: string, maxWidth: number, fontSize: number, fontFamily: 
 };
 
 export default function FallingWord({ word }: FallingWordProps) {
-  const { text, x, y, fontSize, fontFamily, cursorPosition, completed, rotation, rotationDirection, rotationCenterX, rotationCenterY } = word;
-  
-  // Calculate rotation speed based on difficulty (wordsTyped)
-  // Get the current game state to determine difficulty
-  const { wordsTyped } = useWordRain.getState();
-  const difficulty = Math.floor(wordsTyped / 10);
-  const rotationSpeed = Math.max(12 - (difficulty * 1), 3); // Start at 12 seconds per rotation, decrease by 1 second every 10 words, minimum 3 seconds
+  const { text, x, y, fontSize, fontFamily, cursorPosition, completed, rotation, rotationDirection, rotationCenterX, rotationCenterY, rotationSpeed } = word;
 
   if (completed) return null;
 

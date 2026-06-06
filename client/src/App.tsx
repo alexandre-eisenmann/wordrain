@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import { Routes, Route, useNavigate, useLocation, useParams } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { useAudio } from "./lib/stores/useAudio";
 import { useGame } from "./lib/stores/useGame";
 import { useWordRain } from "./lib/stores/useWordRain";
-import { useVariation } from "./lib/stores/useVariation";
 import WordRainCanvas from "./components/game/WordRainCanvas";
 import GameUI from "./components/game/GameUI";
 import TypingInput from "./components/game/TypingInput";
-import CyberpunkBackground from "./components/game/CyberpunkBackground";
+import TectonicBackground from "./components/game/TectonicBackground";
+import DebugOverlay from "./components/game/DebugOverlay";
+import StageInterstitial from "./components/game/StageInterstitial";
+import StatsPanel from "./components/game/StatsPanel";
 import { Howl, Howler } from "howler";
 import "./styles/fonts.css";
 import "@fontsource/inter";
@@ -25,47 +27,34 @@ declare global {
 const getUrlParams = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const test = urlParams.get('test') === 'true' || urlParams.get('test') === '1';
-  console.log("🔍 URL params:", {
-    search: window.location.search,
-    testParam: urlParams.get('test'),
-    test: test
-  });
-  return { test };
+  const debug = urlParams.get('debug') === 'true' || urlParams.get('debug') === '1';
+  const stageParam = parseInt(urlParams.get('stage') || '', 10);
+  const startStage = Number.isFinite(stageParam) && stageParam > 1 ? stageParam : 1;
+  return { test, debug, startStage };
 };
 
 function GameComponent() {
-  const { variationId } = useParams();
-  const { phase, start, restart } = useGame();
-  const { setHitSound, setSuccessSound, playHit, playSuccess } = useAudio();
-  const { setTestMode, score, wordsTyped, accuracy } = useWordRain();
-  const { getCurrentVariation, setVariation } = useVariation();
-  const { getAvailableVariations } = useVariation();
+  const { phase, start } = useGame();
+  const { setHitSound, setSuccessSound } = useAudio();
+  const { setTestMode, setStage, score, wordsTyped, stage, totalStars } = useWordRain();
   const [showCanvas, setShowCanvas] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(3); // Start at position 3 (letter 'd')
   const [audioContextResumed, setAudioContextResumed] = useState(false);
   const isMobile = useIsMobile();
-  
-  // Initialize variation from URL parameter
+
+  // Get URL parameters (test mode, debug overlay, debug start stage)
+  const { test, debug, startStage } = getUrlParams();
+
+  // Set test mode in the store from the URL parameter
   useEffect(() => {
-    if (variationId) {
-      setVariation(variationId);
-    }
-  }, [variationId, setVariation]);
-  
-  // Get test mode from URL parameters
-  const { test } = getUrlParams();
-  
-  // Log test mode status and set it in the store
-  useEffect(() => {
-    console.log("🔍 App component - test mode detected:", test);
-    if (test) {
-      console.log("🧪 Test mode enabled - using long phrases only");
-      setTestMode(true);
-    } else {
-      console.log("🔍 Normal mode - using mixed word types");
-      setTestMode(false);
-    }
+    setTestMode(test);
   }, [test, setTestMode]);
+
+  // Start a run; honor ?stage=N (applied after the auto-reset on "playing").
+  const beginRun = () => {
+    start();
+    if (startStage > 1) setStage(startStage);
+  };
 
   // Initialize audio with mobile-specific handling
   useEffect(() => {
@@ -281,12 +270,11 @@ function GameComponent() {
   }, [phase, isMobile]);
 
   const handleStartGame = () => {
-    start();
+    beginRun();
   };
 
   const handleRestartGame = () => {
-    console.log("Restart button clicked");
-    start(); // Start directly from ended phase
+    start(); // Always restart a fresh run from stage 1 (ignores debug ?stage)
   };
 
   const handleTitleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -301,14 +289,12 @@ function GameComponent() {
     setCursorPosition(3); // Reset to position 3 (letter 'd')
   };
 
-  const currentVariation = getCurrentVariation();
-
   return (
     <div className="relative w-full bg-gradient-to-b from-gray-900 via-purple-900 to-black overflow-hidden" style={{ height: '100dvh' }}>
       {showCanvas && (
         <>
-          {/* Cyberpunk Background */}
-          <CyberpunkBackground />
+          {/* Tectonic-plate visual signature */}
+          <TectonicBackground />
           
           {/* Game Canvas */}
           <WordRainCanvas />
@@ -318,6 +304,15 @@ function GameComponent() {
           
           {/* Hidden Typing Input for key capture */}
           <TypingInput />
+
+          {/* Stage-clear star screen */}
+          <StageInterstitial />
+
+          {/* Opt-in stats panel (toggled from the HUD) */}
+          <StatsPanel />
+
+          {/* Dev-only progression tuning overlay (?debug=1) */}
+          {debug && <DebugOverlay />}
           
           {/* Start/Restart Menu */}
           {phase === "ready" && (
@@ -358,26 +353,7 @@ function GameComponent() {
                   </span>
                 ))}
               </h1>
-              
-              {/* Variation Selection Line */}
-              <div className="mb-6">
-                <div className="flex flex-wrap justify-center gap-2 max-w-xs">
-                  {getAvailableVariations().map((variation) => (
-                    <button
-                      key={variation.id}
-                      onClick={() => setVariation(variation.id)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
-                        currentVariation.id === variation.id
-                          ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-400/25'
-                          : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50 hover:text-white'
-                      }`}
-                    >
-                      {variation.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
+
               {/* Test Mode Indicator */}
               {test && (
                 <div className="mb-6">
@@ -387,11 +363,11 @@ function GameComponent() {
                   </div>
                 </div>
               )}
-              
+
               <p className="text-xl text-cyan-100 mb-8 font-light">
                 Type fast. Think faster. Don't miss 5 words.
               </p>
-              
+
               <button
                 onClick={handleStartGame}
                 data-allow-click="true"
@@ -421,26 +397,21 @@ function GameComponent() {
                   </span>
                 ))}
               </h2>
-              
-              {/* Variation Selection Line */}
-              <div className="mb-6">
-                <div className="flex flex-wrap justify-center gap-2 max-w-xs">
-                  {getAvailableVariations().map((variation) => (
-                    <button
-                      key={variation.id}
-                      onClick={() => setVariation(variation.id)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
-                        currentVariation.id === variation.id
-                          ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-400/25'
-                          : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50 hover:text-white'
-                      }`}
-                    >
-                      {variation.name}
-                    </button>
-                  ))}
-                </div>
+
+              {/* Run summary */}
+              <div className="mb-8 flex flex-col items-center gap-2">
+                <p className="font-mono text-2xl font-bold text-white">
+                  Reached <span className="text-cyan-300">Stage {stage}</span>
+                </p>
+                <p className="flex items-center gap-2 font-mono text-lg text-yellow-300">
+                  <span>★ {totalStars} stars</span>
+                  <span className="text-gray-500">·</span>
+                  <span className="text-white">{score} pts</span>
+                  <span className="text-gray-500">·</span>
+                  <span className="text-green-300">{wordsTyped} words</span>
+                </p>
               </div>
-              
+
               {/* Test Mode Indicator */}
               {test && (
                 <div className="mb-6">
@@ -450,15 +421,7 @@ function GameComponent() {
                   </div>
                 </div>
               )}
-              
-              <p className="text-xl text-red-200 mb-4 font-light">
-                5 words escaped!
-              </p>
-              
-              <p className="text-lg text-cyan-100 mb-8 font-light">
-                Type fast. Think faster. Don't miss 5 words.
-              </p>
-              
+
               <button
                 onClick={handleRestartGame}
                 data-allow-click="true"
@@ -482,7 +445,6 @@ function AppRouter() {
     <Routes>
       <Route path="/" element={<GameComponent />} />
       <Route path="/wordrain" element={<GameComponent />} />
-      <Route path="/wordrain/:variationId" element={<GameComponent />} />
     </Routes>
   );
 }

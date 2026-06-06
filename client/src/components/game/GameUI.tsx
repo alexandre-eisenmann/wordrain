@@ -1,15 +1,23 @@
 import { useWordRain } from "../../lib/stores/useWordRain";
 import { useGame } from "../../lib/stores/useGame";
 import { useAudio } from "../../lib/stores/useAudio";
+import { useSettings } from "../../lib/stores/useSettings";
 import { useIsMobile } from "../../hooks/use-is-mobile";
+import { stageGoalWords, stageMultiplier, stageTheme } from "../../lib/stages";
 
 export default function GameUI() {
   const { phase } = useGame();
-  const { score, wordsTyped, accuracy, missedWords, testMode } = useWordRain();
+  const { score, wordsTyped, accuracy, missedWords, testMode, stage, stageWordsCleared } =
+    useWordRain();
   const { toggleMute, isMuted } = useAudio();
+  const { showStats, toggleStats } = useSettings();
   const isMobile = useIsMobile();
 
-  if (phase !== "playing" && phase !== "ended") return null;
+  if (phase !== "playing" && phase !== "ended" && phase !== "stageClear") return null;
+
+  const goal = stageGoalWords(stage);
+  const goalPct = Math.min(100, (stageWordsCleared / goal) * 100);
+  const multiplier = stageMultiplier(stage);
 
   return (
     <div 
@@ -40,7 +48,23 @@ export default function GameUI() {
               </div>
             ))}
           </div>
-          
+
+          {/* Stage indicator + goal progress */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-baseline gap-2">
+              <span className="text-cyan-300 text-xs font-mono opacity-80">STAGE</span>
+              <span className="text-white text-lg font-bold font-mono leading-none">{stage}</span>
+              <span className="text-purple-300 text-xs font-mono opacity-80">{stageTheme(stage).name}</span>
+            </div>
+            <div className="h-1.5 w-28 overflow-hidden rounded-full bg-gray-700/60">
+              <div
+                className="h-full rounded-full bg-cyan-400 transition-[width] duration-150"
+                style={{ width: `${goalPct}%`, boxShadow: "0 0 6px rgba(34,211,238,0.6)" }}
+              />
+            </div>
+            <span className="text-gray-400 text-[10px] font-mono">{stageWordsCleared}/{goal} words</span>
+          </div>
+
           {/* Test Mode Indicator - moved under hearts */}
           {testMode && (
             <div className="pointer-events-auto">
@@ -56,11 +80,20 @@ export default function GameUI() {
         <div className="flex flex-col gap-1 items-end">
           <div className="flex flex-col items-end">
             <span className="text-cyan-300 text-xs font-mono opacity-80">SCORE</span>
-            <div className="w-12 text-right">
+            <div className="w-20 text-right">
               <span className="text-white text-sm font-bold font-mono">{score}</span>
             </div>
           </div>
-          
+
+          {multiplier > 1 && (
+            <div className="flex flex-col items-end">
+              <span className="text-pink-300 text-xs font-mono opacity-80">MULTIPLIER</span>
+              <div className="w-20 text-right">
+                <span className="text-pink-200 text-sm font-bold font-mono">x{multiplier.toFixed(2)}</span>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col items-end">
             <span className="text-green-300 text-xs font-mono opacity-80">WORDS</span>
             <div className="w-12 text-right">
@@ -77,12 +110,35 @@ export default function GameUI() {
             </div>
           </div>
           
-          {/* Sound Control */}
+          {/* Controls: stats toggle + sound */}
+          <div className="flex items-center gap-3 pt-2 self-end">
+          <button
+            onClick={toggleStats}
+            onMouseDown={(e) => e.preventDefault()}
+            data-allow-click="true"
+            className="relative group"
+            aria-label={showStats ? "Hide stats" : "Show stats"}
+            style={{ lineHeight: 0 }}
+          >
+            <svg
+              className={`relative z-10 w-4 h-4 transition-colors duration-200 ${
+                showStats
+                  ? "text-cyan-300"
+                  : "text-cyan-400/60 group-hover:text-cyan-300"
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v18h18" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 14l3-4 3 3 4-6" />
+            </svg>
+          </button>
           <button
             onClick={toggleMute}
             onMouseDown={(e) => e.preventDefault()}
             data-allow-click="true"
-            className="relative group pt-2 self-end"
+            className="relative group"
             aria-label={isMuted ? "Unmute" : "Mute"}
             style={{ lineHeight: 0 }}
           >
@@ -97,6 +153,7 @@ export default function GameUI() {
               </svg>
             )}
           </button>
+          </div>
         </div>
       </div>
     </div>

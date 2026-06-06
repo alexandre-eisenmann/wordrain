@@ -3,7 +3,7 @@ import { WORDLIST } from "./bip39";
 import { LONG_WORDLIST } from "./longWords";
 import { PHRASE_LIST } from "./phrases";
 import { LONG_PHRASE_LIST } from "./longPhrases";
-import { useVariation } from "./stores/useVariation";
+import type { SizeDistribution, SizeCategory } from "./progression";
 
 // Combine all word lists
 const ALL_WORDS = [...WORDLIST, ...LONG_WORDLIST, ...PHRASE_LIST, ...LONG_PHRASE_LIST];
@@ -22,16 +22,6 @@ ALL_WORDS.forEach(word => {
 
 // Get available word lengths (sorted)
 const AVAILABLE_LENGTHS = Array.from(WORDS_BY_LENGTH.keys()).sort((a, b) => a - b);
-
-// Log word length distribution for debugging
-console.log('Combined Word Length Distribution:');
-AVAILABLE_LENGTHS.forEach(length => {
-  const count = WORDS_BY_LENGTH.get(length)!.length;
-  console.log(`${length} letters: ${count} words`);
-});
-
-// Track word usage for debugging
-const wordUsageCount = new Map<string, number>();
 
 // Word lists for the game - combined BIP39, long words, phrases, and long phrases
 const WORD_LISTS = {
@@ -502,108 +492,63 @@ const FONT_FAMILIES = [
   '"Zeyada", cursive'
 ];
 
-// Get a random word with variation-based distribution
-export function getRandomWord(wordsTyped: number = 0, testMode: boolean = false): string {
-  // If test mode is enabled, only use long phrases
+// Default distribution used when none is supplied (e.g. early init).
+const DEFAULT_DISTRIBUTION: SizeDistribution = {
+  shortWords: 0.7,
+  mediumWords: 0.3,
+  longWords: 0,
+  veryLongWords: 0,
+  extremelyLongWords: 0,
+  phrases: 0,
+  longPhrases: 0,
+};
+
+// Pick a random word for the given (already-normalized) size distribution.
+// The distribution is produced by the progression engine from the current
+// intensity; `testMode` forces long-phrases-only regardless.
+export function getRandomWord(
+  wordsTyped: number = 0,
+  testMode: boolean = false,
+  distribution: SizeDistribution = DEFAULT_DISTRIBUTION,
+): string {
   if (testMode) {
-    console.log("🧪 Test mode active - using long phrases only");
-    const longPhrase = getRandomLongPhrase(wordsTyped);
-    console.log("🧪 Selected long phrase:", longPhrase);
-    return longPhrase;
+    return getRandomLongPhrase(wordsTyped);
   }
-  
-  // Get current variation
-  const variation = useVariation.getState().getCurrentVariation();
-  const distribution = variation.wordSizeDistribution;
-  
-  // Adjust probabilities based on pace - keep word distribution consistent
-  const adjustedDistribution = {
-    shortWords: distribution.shortWords,
-    mediumWords: distribution.mediumWords,
-    longWords: distribution.longWords,
-    veryLongWords: distribution.veryLongWords,
-    extremelyLongWords: distribution.extremelyLongWords,
-    phrases: distribution.phrases,
-    longPhrases: distribution.longPhrases,
-  };
-  
-  // Normalize probabilities
-  const totalProb = Object.values(adjustedDistribution).reduce((sum, prob) => sum + prob, 0);
-  const normalizedDistribution = {
-    shortWords: adjustedDistribution.shortWords / totalProb,
-    mediumWords: adjustedDistribution.mediumWords / totalProb,
-    longWords: adjustedDistribution.longWords / totalProb,
-    veryLongWords: adjustedDistribution.veryLongWords / totalProb,
-    extremelyLongWords: adjustedDistribution.extremelyLongWords / totalProb,
-    phrases: adjustedDistribution.phrases / totalProb,
-    longPhrases: adjustedDistribution.longPhrases / totalProb,
-  };
-  
-  // Debug logging for first few calls
-  if (wordsTyped < 5) {
-    console.log(`🎮 Variation: ${variation.name} - Word distribution (score: ${wordsTyped.toFixed(1)}):`);
-    Object.entries(normalizedDistribution).forEach(([category, prob]) => {
-      console.log(`  ${category}: ${(prob * 100).toFixed(1)}%`);
-    });
-  }
-  
-  // Generate random number to select category
+
+  // Select a category by cumulative probability.
   const random = Math.random();
   let cumulativeProb = 0;
-  let selectedCategory: keyof typeof normalizedDistribution = 'shortWords';
-  
-  for (const [category, prob] of Object.entries(normalizedDistribution)) {
+  let selectedCategory: SizeCategory = "shortWords";
+
+  for (const [category, prob] of Object.entries(distribution) as [
+    SizeCategory,
+    number,
+  ][]) {
     cumulativeProb += prob;
     if (random <= cumulativeProb) {
-      selectedCategory = category as keyof typeof normalizedDistribution;
+      selectedCategory = category;
       break;
     }
   }
-  
-  // Get word based on selected category
-  let selectedWord: string;
-  
+
   switch (selectedCategory) {
-    case 'shortWords':
-      selectedWord = getRandomWordByLength(3, 5);
-      break;
-    case 'mediumWords':
-      selectedWord = getRandomWordByLength(6, 8);
-      break;
-    case 'longWords':
-      selectedWord = getRandomWordByLength(9, 12);
-      break;
-    case 'veryLongWords':
-      selectedWord = getRandomWordByLength(13, 20);
-      break;
-    case 'extremelyLongWords':
-      selectedWord = getRandomWordByLength(21, 999);
-      break;
-    case 'phrases':
-      selectedWord = getRandomPhrase(wordsTyped);
-      break;
-    case 'longPhrases':
-      selectedWord = getRandomLongPhrase(wordsTyped);
-      break;
+    case "shortWords":
+      return getRandomWordByLength(3, 5);
+    case "mediumWords":
+      return getRandomWordByLength(6, 8);
+    case "longWords":
+      return getRandomWordByLength(9, 12);
+    case "veryLongWords":
+      return getRandomWordByLength(13, 20);
+    case "extremelyLongWords":
+      return getRandomWordByLength(21, 999);
+    case "phrases":
+      return getRandomPhrase(wordsTyped);
+    case "longPhrases":
+      return getRandomLongPhrase(wordsTyped);
     default:
-      selectedWord = getRandomWordByLength(3, 8); // Fallback
+      return getRandomWordByLength(3, 8);
   }
-  
-  // Track word usage for debugging
-  const currentCount = wordUsageCount.get(selectedWord) || 0;
-  wordUsageCount.set(selectedWord, currentCount + 1);
-  
-  // Debug: Log the selected word for verification
-  if (wordsTyped < 10) {
-    console.log(`🎮 Selected word: "${selectedWord}" (category: ${selectedCategory})`);
-  }
-  
-  // Log if a word is repeated
-  if (currentCount > 0) {
-    console.log(`⚠️ Word repeated: "${selectedWord}" (used ${currentCount + 1} times)`);
-  }
-  
-  return selectedWord;
 }
 
 // Helper function to get random word by length range
@@ -659,10 +604,7 @@ export function getRandomPhrase(wordsTyped: number = 0): string {
 
 // Get a random long phrase specifically
 export function getRandomLongPhrase(wordsTyped: number = 0): string {
-  console.log("🧪 getRandomLongPhrase called - available phrases:", WORD_LISTS.longPhrases.length);
-  const selectedPhrase = WORD_LISTS.longPhrases[Math.floor(Math.random() * WORD_LISTS.longPhrases.length)];
-  console.log("🧪 Selected long phrase:", selectedPhrase);
-  return selectedPhrase;
+  return WORD_LISTS.longPhrases[Math.floor(Math.random() * WORD_LISTS.longPhrases.length)];
 }
 
 // Get a random font family

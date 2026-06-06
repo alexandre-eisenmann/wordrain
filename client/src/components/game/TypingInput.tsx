@@ -9,6 +9,7 @@ export default function TypingInput() {
   const { typeKey } = useWordRain();
   const { playHit, playSuccess } = useAudio();
   const inputRef = useRef<HTMLInputElement>(null);
+  const prevPhaseRef = useRef(phase);
   const isMobile = useIsMobile();
   const [isFocused, setIsFocused] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
@@ -19,14 +20,19 @@ export default function TypingInput() {
     if (phase === "playing" && inputRef.current) {
       // On mobile, try to focus but don't rely on it for keyboard
       if (isMobile) {
-        // Set a flag that we can focus after user interaction
-        setHasUserInteracted(false);
-        setKeyboardVisible(false);
+        // Only re-show "TAP TO TYPE" on a genuinely fresh run — NOT when
+        // resuming from a stage-clear pause, so the mobile keyboard isn't lost
+        // (and re-tapped) after every stage.
+        if (prevPhaseRef.current !== "stageClear") {
+          setHasUserInteracted(false);
+          setKeyboardVisible(false);
+        }
       } else {
         // On desktop, always focus
         inputRef.current.focus();
       }
     }
+    prevPhaseRef.current = phase;
   }, [phase, isMobile]);
 
   // Keep focus on the input during gameplay
@@ -113,7 +119,9 @@ export default function TypingInput() {
     }
   };
 
-  if (phase !== "playing") return null;
+  // Stay mounted during the stage-clear pause so the mobile keyboard persists
+  // (keystrokes are still ignored then — handleKeyDown guards on "playing").
+  if (phase !== "playing" && phase !== "stageClear") return null;
 
   // For mobile, show button when keyboard is not visible
   if (isMobile) {
