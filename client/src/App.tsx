@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import { useAudio } from "./lib/stores/useAudio";
 import { useGame } from "./lib/stores/useGame";
 import { useWordRain } from "./lib/stores/useWordRain";
-import { adGameplayStart, adGameplayStop, showRewarded } from "./lib/ads";
+import { adGameplayStart, adGameplayStop, showRewarded, adsEnabled } from "./lib/ads";
 import WordRainCanvas from "./components/game/WordRainCanvas";
 import GameUI from "./components/game/GameUI";
 import TypingInput from "./components/game/TypingInput";
@@ -445,19 +445,24 @@ function GameComponent() {
               )}
 
               <div className="flex flex-col items-center gap-4">
-                {/* Rewarded ad: opt-in revive with +2 lives, continue this run */}
-                <button
-                  onClick={handleReviveGame}
-                  disabled={reviving}
-                  data-allow-click="true"
-                  className="flex items-center gap-2 px-8 py-4 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-60 disabled:cursor-wait text-black font-bold rounded-lg text-xl transition-all duration-200 shadow-lg hover:shadow-yellow-400/30"
-                  style={{
-                    boxShadow: "0 0 20px rgba(250, 204, 21, 0.35)"
-                  }}
-                >
-                  <span>▶</span>
-                  <span>{reviving ? "LOADING AD…" : "REVIVE · WATCH AD (+2 LIVES)"}</span>
-                </button>
+                {/* Rewarded ad: opt-in revive with +2 lives, continue this run.
+                    Only shown when a real ad SDK is active (CrazyGames Full
+                    Launch). Hidden in dev / GitHub Pages / Basic Launch, where a
+                    non-functional "WATCH AD" button would look broken. */}
+                {adsEnabled && (
+                  <button
+                    onClick={handleReviveGame}
+                    disabled={reviving}
+                    data-allow-click="true"
+                    className="flex items-center gap-2 px-8 py-4 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-60 disabled:cursor-wait text-black font-bold rounded-lg text-xl transition-all duration-200 shadow-lg hover:shadow-yellow-400/30"
+                    style={{
+                      boxShadow: "0 0 20px rgba(250, 204, 21, 0.35)"
+                    }}
+                  >
+                    <span>▶</span>
+                    <span>{reviving ? "LOADING AD…" : "REVIVE · WATCH AD (+2 LIVES)"}</span>
+                  </button>
+                )}
 
                 <button
                   onClick={handleRestartGame}

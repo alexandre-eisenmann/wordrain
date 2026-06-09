@@ -179,3 +179,12 @@ export function showInterstitial(): Promise<void> {
 
 /** Which provider is active (handy for a debug readout). */
 export const activeAdProvider = provider.name;
+
+/**
+ * True only when a real ad SDK is present (e.g. CrazyGames Full Launch). Use this
+ * to gate ad-dependent UI like the "watch ad to revive" button — it must NOT show
+ * in environments with no real ads (local dev, GitHub Pages, CrazyGames Basic
+ * Launch), where a non-functional "WATCH AD" button looks broken and violates the
+ * Basic Launch no-ads rule.
+ */
+export const adsEnabled = provider !== devProvider;
