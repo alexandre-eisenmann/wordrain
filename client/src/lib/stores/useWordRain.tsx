@@ -92,6 +92,7 @@ interface WordRainState {
   tick: (dtSec: number) => void;
   typeKey: (key: string) => { hit: boolean; completed: boolean };
   advanceStage: () => void;
+  revive: () => void; // ad-reward: restore lives and resume the same run
   setStage: (stage: number) => void;
   reset: () => void;
   setTestMode: (testMode: boolean) => void;
@@ -291,6 +292,10 @@ const getFontSize = (theme: Theme): number => {
       return min + Math.random() * (max - min);
   }
 };
+
+// Set by revive() so the ended -> playing transition resumes the run instead of
+// resetting it (see the phase subscribe at the bottom of this file).
+let reviving = false;
 
 export const useWordRain = create<WordRainState>((set, get) => ({
   words: [],
@@ -598,6 +603,20 @@ export const useWordRain = create<WordRainState>((set, get) => ({
     useGame.getState().resume();
   },
 
+  // Ad-reward revive: give back 2 of the 5 lives and resume the SAME run at the
+  // current stage (clearing on-screen words so the player isn't instantly killed
+  // again). The `reviving` guard below stops the phase subscribe from wiping the
+  // run on the ended -> playing transition.
+  revive: () => {
+    reviving = true;
+    set((s) => ({
+      missedWords: Math.max(0, s.missedWords - 2),
+      words: [],
+      explodingLetters: [],
+    }));
+    useGame.getState().resume();
+  },
+
   // Jump straight to a stage (used by ?stage=N for tuning).
   setStage: (stage: number) => {
     set({
@@ -660,11 +679,12 @@ let prevPhase = useGame.getState().phase;
 useGame.subscribe(
   (state) => state.phase,
   (phase) => {
-    if (phase === "playing" && prevPhase !== "stageClear") {
+    if (phase === "playing" && prevPhase !== "stageClear" && !reviving) {
       const now = Date.now();
       useWordRain.getState().reset();
       useWordRain.getState().setGameStartTime(now);
     }
+    reviving = false;
     prevPhase = phase;
   }
 );

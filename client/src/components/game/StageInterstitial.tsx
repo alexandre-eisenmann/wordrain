@@ -2,9 +2,13 @@ import { useEffect } from "react";
 import { useGame } from "../../lib/stores/useGame";
 import { useWordRain } from "../../lib/stores/useWordRain";
 import { stageTheme, stageMultiplier } from "../../lib/stages";
+import { showInterstitial } from "../../lib/ads";
 
 // How long the stage-clear screen holds before the next stage begins.
 const INTERSTITIAL_MS = 1800;
+// Show an interstitial ad once every N stages cleared. Kept modest to avoid ad
+// fatigue; tune here. (No ad on stage 0 / first clears feels best in playtests.)
+const AD_EVERY_STAGES = 3;
 
 // 80s-arcade "STAGE CLEAR" card: shows the 1-3 stars earned, the bonus, and the
 // next stage banner, then auto-advances. Rendered only while phase === "stageClear".
@@ -14,9 +18,26 @@ export default function StageInterstitial() {
 
   useEffect(() => {
     if (phase !== "stageClear") return;
-    const t = setTimeout(() => advanceStage(), INTERSTITIAL_MS);
-    return () => clearTimeout(t);
-  }, [phase, advanceStage]);
+    let cancelled = false;
+
+    // Hold the star card, then (every Nth stage) play an interstitial, then
+    // advance. The ad is fire-safe — showInterstitial always resolves — so it
+    // can never block progression. `stage` here is the stage just cleared.
+    const run = async () => {
+      await new Promise((r) => setTimeout(r, INTERSTITIAL_MS));
+      if (cancelled) return;
+      if (stage % AD_EVERY_STAGES === 0) {
+        await showInterstitial();
+        if (cancelled) return;
+      }
+      advanceStage();
+    };
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [phase, stage, advanceStage]);
 
   if (phase !== "stageClear") return null;
 

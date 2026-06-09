@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import { useAudio } from "./lib/stores/useAudio";
 import { useGame } from "./lib/stores/useGame";
 import { useWordRain } from "./lib/stores/useWordRain";
+import { adGameplayStart, adGameplayStop, showRewarded } from "./lib/ads";
 import WordRainCanvas from "./components/game/WordRainCanvas";
 import GameUI from "./components/game/GameUI";
 import TypingInput from "./components/game/TypingInput";
@@ -36,8 +37,9 @@ const getUrlParams = () => {
 function GameComponent() {
   const { phase, start } = useGame();
   const { setHitSound, setSuccessSound } = useAudio();
-  const { setTestMode, setStage, score, wordsTyped, stage, totalStars } = useWordRain();
+  const { setTestMode, setStage, score, wordsTyped, stage, totalStars, revive } = useWordRain();
   const [showCanvas, setShowCanvas] = useState(false);
+  const [reviving, setReviving] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(3); // Start at position 3 (letter 'd')
   const [audioContextResumed, setAudioContextResumed] = useState(false);
   const isMobile = useIsMobile();
@@ -61,7 +63,7 @@ function GameComponent() {
     console.log("Initializing audio...");
     
     const hitAudio = new Howl({
-      src: ["/wordrain/sounds/hit.mp3"],
+      src: [`${import.meta.env.BASE_URL}sounds/hit.mp3`],
       volume: 0.5,
       preload: true,
       html5: true, // Use HTML5 Audio for better mobile compatibility
@@ -79,7 +81,7 @@ function GameComponent() {
     setHitSound(hitAudio);
 
     const successAudio = new Howl({
-      src: ["/wordrain/sounds/success.mp3"],
+      src: [`${import.meta.env.BASE_URL}sounds/success.mp3`],
       volume: 0.7,
       preload: true,
       html5: true, // Use HTML5 Audio for better mobile compatibility
@@ -277,6 +279,26 @@ function GameComponent() {
     start(); // Always restart a fresh run from stage 1 (ignores debug ?stage)
   };
 
+  // Opt-in rewarded ad on game over: watch an ad to revive with +2 lives and
+  // continue the same run. Only revives if the reward was actually earned.
+  const handleReviveGame = async () => {
+    if (reviving) return;
+    setReviving(true);
+    try {
+      const earned = await showRewarded();
+      if (earned) revive();
+    } finally {
+      setReviving(false);
+    }
+  };
+
+  // Let the ad provider (portal SDK) know when active gameplay is on, so it can
+  // pause/mute ads appropriately. No-op when no SDK is present.
+  useEffect(() => {
+    if (phase === "playing") adGameplayStart();
+    else adGameplayStop();
+  }, [phase]);
+
   const handleTitleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -422,16 +444,32 @@ function GameComponent() {
                 </div>
               )}
 
-              <button
-                onClick={handleRestartGame}
-                data-allow-click="true"
-                className="px-8 py-4 bg-cyan-600 hover:bg-cyan-500 text-black font-semibold rounded-lg text-xl transition-all duration-200 shadow-lg hover:shadow-cyan-400/25"
-                style={{
-                  boxShadow: "0 0 20px rgba(34, 211, 238, 0.3)"
-                }}
-              >
-                RESTART
-              </button>
+              <div className="flex flex-col items-center gap-4">
+                {/* Rewarded ad: opt-in revive with +2 lives, continue this run */}
+                <button
+                  onClick={handleReviveGame}
+                  disabled={reviving}
+                  data-allow-click="true"
+                  className="flex items-center gap-2 px-8 py-4 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-60 disabled:cursor-wait text-black font-bold rounded-lg text-xl transition-all duration-200 shadow-lg hover:shadow-yellow-400/30"
+                  style={{
+                    boxShadow: "0 0 20px rgba(250, 204, 21, 0.35)"
+                  }}
+                >
+                  <span>▶</span>
+                  <span>{reviving ? "LOADING AD…" : "REVIVE · WATCH AD (+2 LIVES)"}</span>
+                </button>
+
+                <button
+                  onClick={handleRestartGame}
+                  data-allow-click="true"
+                  className="px-8 py-4 bg-cyan-600 hover:bg-cyan-500 text-black font-semibold rounded-lg text-xl transition-all duration-200 shadow-lg hover:shadow-cyan-400/25"
+                  style={{
+                    boxShadow: "0 0 20px rgba(34, 211, 238, 0.3)"
+                  }}
+                >
+                  RESTART
+                </button>
+              </div>
             </div>
           )}
         </>

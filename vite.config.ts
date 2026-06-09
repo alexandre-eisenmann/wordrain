@@ -9,7 +9,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default defineConfig({
-  base: '/wordrain/',  // ✅ Add this line
+  // Base path differs per deploy target:
+  //   - GitHub Pages serves from /wordrain/ (default).
+  //   - Portals like CrazyGames serve from an arbitrary path, so assets must be
+  //     referenced relatively. Set VITE_BASE=./ for those builds (see the
+  //     `build:crazygames` script in package.json).
+  base: process.env.VITE_BASE || '/wordrain/',
   plugins: [
     react(),
     runtimeErrorOverlay(),

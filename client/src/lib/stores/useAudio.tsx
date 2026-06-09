@@ -124,7 +124,7 @@ export const useAudio = create<AudioState>((set, get) => ({
       try {
         console.log("Attempting to recreate hit sound...");
         const newHitSound = new Howl({
-          src: ["/wordrain/sounds/hit.mp3"],
+          src: [`${import.meta.env.BASE_URL}sounds/hit.mp3`],
           volume: 0.5,
           preload: true,
           html5: true,
@@ -188,7 +188,7 @@ export const useAudio = create<AudioState>((set, get) => ({
       try {
         console.log("Attempting to recreate success sound...");
         const newSuccessSound = new Howl({
-          src: ["/wordrain/sounds/success.mp3"],
+          src: [`${import.meta.env.BASE_URL}sounds/success.mp3`],
           volume: 0.7,
           preload: true,
           html5: true,
