@@ -4,3 +4,5 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+# CrazyGames cover-image build artifacts (regenerable via rsvg-convert)
+cg-covers/

@@ -10,8 +10,15 @@ game ends. It's an **80s-arcade staged** experience: one infinite track where yo
 clear a per-stage word goal, earn a 1–3 star rating, and advance to the next,
 harder stage forever. It's a static single-page app deployed to GitHub Pages.
 
+It is **also published on CrazyGames** (HTML5 portal) for distribution +
+ad-monetization. That build differs only in base path: GitHub Pages serves from
+`/wordrain/`; CrazyGames serves from an arbitrary iframe path, so its build uses
+a **relative** base (`./`) — see `pnpm build:crazygames` and the ad layer below.
+
 Live base path is `/wordrain/` (see `vite.config.ts`), so all asset URLs and
-routes are prefixed with `/wordrain`.
+routes are prefixed with `/wordrain`. The base is overridable via the `VITE_BASE`
+env var; runtime asset paths (e.g. sounds) use `import.meta.env.BASE_URL` rather
+than a hardcoded `/wordrain/` so both deploy targets work.
 
 ## Tech stack
 
@@ -32,10 +39,11 @@ routes are prefixed with `/wordrain`.
 ```bash
 pnpm install       # install dependencies
 pnpm dev           # Vite dev server
-pnpm build         # production build → dist/
-pnpm preview       # serve the production build locally
-pnpm check         # tsc type-check (noEmit)
-pnpm deploy        # gh-pages -d dist (manual deploy; CI also auto-deploys)
+pnpm build              # production build → dist/ (base /wordrain/, for Pages)
+pnpm build:crazygames   # production build → dist/ with relative base (./) for CrazyGames
+pnpm preview            # serve the production build locally
+pnpm check              # tsc type-check (noEmit)
+pnpm deploy             # gh-pages -d dist (manual deploy; CI also auto-deploys)
 ```
 
 There is **no test suite** and no linter configured. Use `pnpm check` to
@@ -47,6 +55,29 @@ deep at stage N (tuning late game).
 
 Deployment is automatic via `.github/workflows/` on push to `main` (GitHub
 Pages). `DEPLOYMENT.md` has details.
+
+### CrazyGames deployment (`lib/ads.ts`)
+
+Published to CrazyGames as an HTML5 game (Basic Launch submitted 2026-06-09).
+Two things make it portal-ready:
+
+- **Routing:** `App.tsx`'s router uses a catch-all `path="*"` route — CrazyGames
+  serves the build from an arbitrary iframe path, so fixed routes rendered a
+  blank page. Keep the catch-all.
+- **Ads:** `lib/ads.ts` is a provider-agnostic wrapper (`showRewarded`,
+  `showInterstitial`, `adGameplayStart/Stop`). It auto-detects the CrazyGames
+  HTML5 **v2** SDK on `window`; with no SDK present (local dev, GitHub Pages,
+  Basic Launch) it falls back to a no-op provider and rewarded ads auto-grant so
+  the flow stays testable. Placements: a **rewarded "revive" (+2 lives)** on the
+  game-over screen (`revive()` in `useWordRain.tsx`), and an **interstitial every
+  3rd stage clear** (`StageInterstitial.tsx`). All ad calls are hang-safe so they
+  can never block stage progression.
+
+To go from Basic → **Full Launch** (turns on real ads / revenue): uncomment the
+v2 SDK `<script>` in `client/index.html`, run `pnpm build:crazygames`, and
+re-upload `dist/` contents (with `index.html` at the upload root). Cover-image
+sources live in `cg-covers/` (gitignored build artifacts, regenerable via
+`rsvg-convert`).
 
 ## Project layout
 
