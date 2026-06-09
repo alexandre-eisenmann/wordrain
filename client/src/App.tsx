@@ -479,10 +479,12 @@ function GameComponent() {
 }
 
 function AppRouter() {
+  // Render the game on ANY path. Portals like CrazyGames serve the build from an
+  // arbitrary URL path inside an iframe, so a catch-all is required — otherwise
+  // no route matches and the app renders nothing (blank screen).
   return (
     <Routes>
-      <Route path="/" element={<GameComponent />} />
-      <Route path="/wordrain" element={<GameComponent />} />
+      <Route path="*" element={<GameComponent />} />
     </Routes>
   );
 }
